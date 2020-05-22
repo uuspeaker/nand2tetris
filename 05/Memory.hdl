@@ -1,0 +1,49 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/Memory.hdl
+
+/**
+ * The complete address space of the Hack computer's memory,
+ * including RAM and memory-mapped I/O.
+ * The chip facilitates read and write operations, as follows:
+ *     Read:  out(t) = Memory[address(t)](t)
+ *     Write: if load(t-1) then Memory[address(t-1)](t) = in(t-1)
+ * In words: the chip always outputs the value stored at the memory
+ * location specified by address. If load==1, the in value is loaded
+ * into the memory location specified by address. This value becomes
+ * available through the out output from the next time step onward.
+ * Address space rules:
+ * Only the upper 16K+8K+1 words of the Memory chip are used.
+ * Access to address>0x6000 is invalid. Access to any address in
+ * the range 0x4000-0x5FFF results in accessing the screen memory
+ * map. Access to address 0x6000 results in accessing the keyboard
+ * memory map. The behavior in these addresses is described in the
+ * Screen and Keyboard chip specifications given in the book.
+ */
+
+CHIP Memory {
+    IN in[16], load, address[15];
+    OUT out[16];
+
+    PARTS:
+    // Put your code here:
+    // address[0]=00或者01 表示写入16K内存区域，10表示写入显示器区域，11表示写入键盘区域
+    DMux(in=load, sel=address[14], a=memory);
+    DMux4Way(in=load, sel=address[13..14], c=screen, d=keyboard);
+    RAM16K(in=in, load=memory, address=address[0..13], out=outMemory);
+    Screen(in=in, load=screen, address=address[0..12], out=outScreen);
+
+    //若前两位是11，这后面必须全部是0，否则超出内存范围
+    Or8Way(in=address[0..7], out=outOr8);
+    Or8Way(in[0..4]=address[8..12], in[5..7]=false, out=outOr5);
+    Or(a=outOr5, b=outOr8, out=or13);
+    Not(in=or13, out=notOr13);
+    //前两位是11，后面全部是0，表示键盘
+    And(a=keyboard, b=notOr13, out=keyboardLoad);
+    //Register(in=in, load=keyboardLoad, out=outKeyboard);
+    Keyboard(out=outKeyboard);
+    //address为11打头时，若后面全为0则输出键盘值，若不是全为0表示超出范围，取默认值0
+    Mux16(a=outKeyboard, b=false, sel=or13, out=valueForHead11);
+    Mux4Way16(a=outMemory, b=outMemory, c=outScreen, d=valueForHead11, sel=address[13..14], out=out);
+}
