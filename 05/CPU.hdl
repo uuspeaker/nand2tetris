@@ -40,10 +40,13 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    // instruction[0]=0 表示A指令，表示A寄存器的地址需要更新，将instruction写入到A寄存器
     Mux16(a=instruction, b=ALUOutM, sel=instruction[0], out=ARegisterInput);
-    ARegister(in=ARegisterInput, load=true, out=ARegisterOutput);
+    Not(in=instruction[0], out=notIns0);
+    ARegister(in=ARegisterInput, load=notIns0, out=ARegisterOutput);
+    // instruction[3]=0表示将与A计算, =1表示将与M计算
     Mux16(a=ARegisterOutput, b=inM, sel=instruction[3], out=ALUInputAorM);
-    DRegister(in=ALUOutM, load=c, out=DregisterOutput);
+
     ALU(x=DregisterOutput, y=ALUInputAorM,
       zx=instruction[4],
       nx=instruction[5],
@@ -51,14 +54,38 @@ CHIP CPU {
       ny=instruction[7],
       f=instruction[8],
       no=instruction[9],
-      out=outM, zr=c, ng=)
+      out=outM, out=ALUOutM, out[0]=lt0, out[0..7]=out8, out[8..15]=out16 zr=writeM, ng=)；
+
+    // instruction[0]=1且instruction[10]=1表示A寄存器的值需要更新
+    And(a=instruction[0], b=instruction[10], out=ins0andInst10);
+    // instruction[0]=1且instruction[11]=1表示D寄存器的值需要更新
+    And(a=instruction[0], b=instruction[11], out=ins0andInst11);
+    DRegister(in=ALUOutM, load=ins0andInst11, out=DregisterOutput);
+
+    //////////////////处理指令计数器
+    //若instruction[13]，[14]，[15]均为0，这表示不跳转，下一指令为A=A+1
+    DMux8Way(in=true, sel=instruction[13..15], a=inc, b=b, c=c, d=d, e=e, f=f, g=g, h=h);
+    Or8Way(in=out8, out=or8);
+    Or8Way(in=out16, out=or16);
+    Or(a=or8, b=out16, out=orOut16);
+    Not(a=true, b=false, in=orOut16, out=eq0)
+    Not(in=eq0, out=ne0);
+    Not(in=lt0, out=gt0);
+    Or(a=le0, b=eq0, out=le0);
+    Or(a=gt0, b=eq0, out=ge0);
+
+    And(a=b, b=gt0, out=load1);
+    And(a=c, b=eq0, out=load2);
+    And(a=d, b=ge0, out=load3);
+    And(a=e, b=lt0, out=load4);
+    And(a=f, b=ne0, out=load5);
+    And(a=g, b=le0, out=load6);
+    And(a=h, b=true, out=load7);
+
+    Or8Way(a=load1, b=load2, c=load3, d=load4, e=load5, f=load6, g=load7, h=false, out=load);
 
 
-    ////////////////////处理A指令
-    // instruction[0]=0 表示A指令
-    // A指令时，传入的指令即为地址，
-    ARegister(in=instruction, load=false, out=ARegisterValue, out=addressM);
+    PC(in=ARegisterOutput, load=load, inc=inc, reset=reset, out=pc);
 
 
-    // ////////////////////处理C指令
 }
