@@ -41,49 +41,58 @@ CHIP CPU {
     PARTS:
     // Put your code here:
     ///////////////////// 更新A寄存器的值///////////////////////
-    // （instruction[0]=0）或者，（instruction[0]=1且instruction[10]=1）表示A寄存器的值需要更新
-    // instruction[0]=0表示A指令，instruction即为新的地址
-    // instruction[0]=1表示C指令，此时instruction[10]=1表示将ALU的结算结果当作新地址
-    Mux16(a=instruction, b=ALUOutM, sel=instruction[0], out=ARegisterInput);
+    // A指令，instruction即为新的地址
+    // C指令，且instruction[5]=1表示将ALU的结算结果当作新地址
+    Not(in=instruction[15], out=isA);
+    Not(in=isA, out=isC);
+    Mux16(a=instruction, b=ALUOutM, sel=isC, out=ARegisterInput);
     // 判断地址是否需要更新
-    Not(in=instruction[0], out=notIns0);
-    And(a=instruction[0], b=instruction[10], out=ins0AndIns10);
-    Or(a=notIns0, b=ins0AndIns10, out=notIns0OrInst10);
+    And(a=isC, b=instruction[5], out=changeAddressForC);
+    Or(a=isA, b=changeAddressForC, out=changeAddress);
     //根据判断情况将对应地址赋予A寄存器
-    ARegister(in=ARegisterInput, load=notIns0OrInst10, out=ARegisterOutput);
+    ARegister(in=ARegisterInput, load=changeAddress, out=ARegisterOutput, out[0..14]=addressM);
 
     ////////////////////////计算ALU////////////////////////////
-    // instruction[3]=0表示将与A计算, =1表示将与M计算
-    Mux16(a=ARegisterOutput, b=inM, sel=instruction[3], out=ALUInputAorM);
-    ALU(x=DregisterOutput, y=ALUInputAorM,zx=instruction[4],nx=instruction[5],zy=instruction[6],ny=instruction[7],f=instruction[8],no=instruction[9],out=outM, out=ALUOutM, out[0..7]=out8, out[8..15]=out16 zr=eq0, ng=lt0);
+    // C指令且instruction[12]=1，表示将与M计算
+    And(a=isC, b=instruction[12], out=useM);
+    Mux16(a=ARegisterOutput, b=inM, sel=useM, out=ALUInputAorM);
+    ALU(x=DregisterOutput, y=ALUInputAorM,
+      zx=instruction[11],
+      nx=instruction[10],
+      zy=instruction[9],
+      ny=instruction[8],
+      f=instruction[7],
+      no=instruction[6],
+      out=outM, out=ALUOutM, zr=eq0, ng=lt0);
 
     //////////////////更新DM寄存器的值/////////////////////////////
-    // instruction[0]=1且instruction[11]=1表示D寄存器的值需要更新
-    And(a=ins0, b=instruction[11], out=ins0andInst11);
-    DRegister(in=ALUOutM, load=ins0andInst11, out=DregisterOutput);
-    // instruction[0]=1且instruction[12]=1表示M寄存器的值需要更新
-    And(a=ins0, b=instruction[12], out=writeM);
+    // instruction[15]=1且instruction[4]=1表示D寄存器的值需要更新
+    And(a=instruction[15], b=instruction[4], out=changeD);
+    DRegister(in=ALUOutM, load=changeD, out=DregisterOutput);
+    // instruction[15]=1且instruction[3]=1表示M寄存器的值需要更新
+    And(a=instruction[15], b=instruction[3], out=writeM);
 
     //////////////////处理指令计数器/////////////////////////////
-    //若instruction[13]，[14]，[15]均为0，这表示不跳转，下一指令为A=A+1
-    DMux8Way(in=true, sel=instruction[13..15], a=inc, b=b, c=c, d=d, e=e, f=f, g=g, h=h);
+
+    DMux8Way(in=true, sel=instruction[0..2], a=aJmp, b=bJmp, c=cJmp, d=dJmp, e=eJmp, f=fJmp, g=gJmp, h=hJmp);
+    //获取out值和0的大小关系
+    Or(a=lt0, b=eq0, out=le0);
     Not(in=eq0, out=ne0);
-    Not(in=lt0, out=gt0);
-    Or(a=le0, b=eq0, out=le0);
-    Or(a=gt0, b=eq0, out=ge0);
+    Not(in=lt0, out=ge0);
+    Not(in=le0, out=gt0);
+    //C指令时，若为以下7种情况之一则跳转到A寄存器指定的地址
+    And(a=bJmp, b=gt0, out=load1);
+    And(a=cJmp, b=eq0, out=load2);
+    And(a=dJmp, b=ge0, out=load3);
+    And(a=eJmp, b=lt0, out=load4);
+    And(a=fJmp, b=ne0, out=load5);
+    And(a=gJmp, b=le0, out=load6);
+    And(a=hJmp, b=true, out=load7);
 
-    And(a=b, b=gt0, out=load1);
-    And(a=c, b=eq0, out=load2);
-    And(a=d, b=ge0, out=load3);
-    And(a=e, b=lt0, out=load4);
-    And(a=f, b=ne0, out=load5);
-    And(a=g, b=le0, out=load6);
-    And(a=h, b=true, out=load7);
+    Or8Way(in[0]=load1, in[1]=load2, in[2]=load3, in[3]=load4, in[4]=load5, in[5]=load6, in[6]=load7, in[7]=false, out=load8);
+    And(a=isC, b=load8, out=load);
 
-    Or8Way(a=load1, b=load2, c=load3, d=load4, e=load5, f=load6, g=load7, h=false, out=load);
-
-
-    PC(in=ARegisterOutput, load=load, inc=inc, reset=reset, out=pc);
+    PC(in=ARegisterOutput, load=load, inc=true, reset=reset, out[0..14]=pc);
 
 
 }
