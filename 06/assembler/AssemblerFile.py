@@ -1,6 +1,7 @@
 import os
 import re
-import Ainstruction
+from Ainstruction import Ainstruction
+from Cinstruction import Cinstruction
 
 def get_lines(src):
     with open(src, 'r') as file:
@@ -26,31 +27,22 @@ def get_valid_lines(src):
     print(validLines)
     return validLines
 
-
-
-
-
-def translate_cins(instruction):
-    cins = Cinstruction(instruction)
-    aflag = getAflag(instruction)
-    calculateFlag = getCalculateFlag(instruction)
-    destination = getDestination(instruction)
-    jump = getJump(instruction)
-    return '111' + aflag + calculateFlag + destination + jump
-
 def get_instruction(src):
     validLines = get_valid_lines(src)
     lines = []
     index = 0
+    var_index = 16
     for line in validLines:
-        line = validLines[index]
         if re.match(r'^\s*@', line):
-            lines.append({'index': index, 'type': 'A', 'value': tranlateA(line)})
+            ains = Ainstruction(line, var_index)
+            lines.append({'index': index, 'type': 'A', 'value': ains.tranlate_aflag()})
             index = index + 1
+            var_index = ains.get_next_index()
         elif re.match(r'^\(.+\)$', line):
             lines.append({'index': index, 'type': 'L', 'value': line})
         else:
-            lines.append({'index': index, 'type': 'C', 'value': translate_cins(line)})
+            cins = Cinstruction(line)
+            lines.append({'index': index, 'type': 'C', 'value': cins.translate_cins()})
             index = index + 1
 
     print('get_instruction line size is ', len(lines))
@@ -69,10 +61,6 @@ def generate_bin_file(src):
     with open(path + '/' + newFileName, 'w+') as file:
         for line in lines:
             file.write(line['value'] + '\n')
-
-
-
-
 
 
 fileSrc = 'D:/program/nand2tetris/06/add/Add.asm'

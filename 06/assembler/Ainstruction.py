@@ -24,32 +24,35 @@ class Ainstruction:
         'KBD': 24576,
     }
 
-    def __init__(self, value):
-        self.instruction = value
+    def __init__(self, ins_value, ins_index):
+        self.instruction = ins_value
+        self.index = ins_index
 
-    def tranlate_aflag(self, instruction):
-        ins = instruction.replace('@', '')
+    def tranlate_aflag(self):
+        ins = self.instruction.replace('@', '')
         isInt = re.match('^\d+$', ins)
         if isInt:
             return self.get_bin_value(ins)
         else:
-            return self.translateVar(ins)
+            return self.translate_var()
 
-    varAddress = 16
 
-    def translateVar(self, ins):
-        global varAddress
-        ins_value = self.sys_ins.get(ins, '')
+
+    def translate_var(self):
+        ins_value = self.sys_ins.get(self.instruction, '')
         # print('ins', ins)
         # 未找到地址则添加进去
         if ins_value == '':
-            dic_pair = {ins: varAddress}
+            dic_pair = {self.instruction: self.index}
             # print('dicPair', dicPair)
             self.sys_ins.update(dic_pair)
-            varAddress = varAddress + 1
-            return self.get_bin_value(varAddress)
+            self.index = self.index + 1
+            return self.get_bin_value(self.index)
         else:
             return self.get_bin_value(ins_value)
+
+    def get_next_index(self):
+        return self.index
 
     def get_bin_value(self, int_value):
         value = bin(int_value)
