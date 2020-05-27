@@ -21,6 +21,7 @@ class Cinstruction:
         'M+1': '110111',
         'D-1': '001110',
         'A-1': '110010',
+        'M-1': '110010',
         'D+A': '000010',
         'D+M': '000010',
         'D-A': '010011',
@@ -86,7 +87,7 @@ class Cinstruction:
     def get_jump(self):
         return self.jumpMapping.get(self.instruction, '000')
 
-    def translate_cins(self):
+    def translate_ins(self):
         aflag = self.get_aflag()
         calculateFlag = self.get_calculate_flag()
         destination = self.get_destination()

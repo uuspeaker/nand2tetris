@@ -20,34 +20,39 @@ class Ainstruction:
         'R13': 13,
         'R14': 14,
         'R15': 15,
-        'Screen': 16384,
+        'SCREEN': 16384,
         'KBD': 24576,
+        'SP': 0,
+        'LCL': 1,
+        'ARG': 2,
+        'THIS': 3,
+        'THAT': 4
     }
 
     def __init__(self, ins_value, ins_index):
-        self.instruction = ins_value
+        self.instruction = ins_value.replace('@', '')
         self.index = ins_index
 
-    def tranlate_aflag(self):
-        ins = self.instruction.replace('@', '')
-        isInt = re.match('^\d+$', ins)
-        if isInt:
-            return self.get_bin_value(ins)
-        else:
+    def tranlate_ins(self):
+        # 后面为数字，则直接转换成二进制
+        if self.instruction.isdigit():
+            # print('数字', self.instruction)
+            return self.get_bin_value(int(self.instruction,10))
+        else: #非数字，则分配一个内存地址
             return self.translate_var()
 
 
 
     def translate_var(self):
         ins_value = self.sys_ins.get(self.instruction, '')
-        # print('ins', ins)
+
         # 未找到地址则添加进去
         if ins_value == '':
             dic_pair = {self.instruction: self.index}
-            # print('dicPair', dicPair)
+            print('添加变量映射', dic_pair)
             self.sys_ins.update(dic_pair)
             self.index = self.index + 1
-            return self.get_bin_value(self.index)
+            return self.get_bin_value(dic_pair[self.instruction])
         else:
             return self.get_bin_value(ins_value)
 
