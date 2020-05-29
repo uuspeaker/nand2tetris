@@ -16,16 +16,6 @@ class PushInstruction:
         code.append('M=M+1')
         return code
 
-
-    # 将constant变量push到栈中，并将RAM0指向的地址+1
-    def push_constant(self, value):
-        code = []
-        code.append('//push constant ' + value)
-        code.append('@' + value)
-        code.append('D=A')
-        code.extend(self.push_D_to_stack())
-        return code
-
     def push_other(self, param_type, offset):
         code = []
         address_name = self.param_dic.get(param_type, '')
@@ -33,6 +23,18 @@ class PushInstruction:
         if param_type == 'temp':
             address = int(offset) + 5
             code.append('@{}'.format(address))
+            code.append('D=M')
+        elif param_type == 'static':
+            code.append('@Foo.{}'.format(offset))
+            code.append('D=M')
+        elif param_type == 'constant':
+            code.append('@' + offset)
+            code.append('D=A')
+        elif param_type == 'pointer' and offset == '0':
+            code.append('@R3')
+            code.append('D=M')
+        elif param_type == 'pointer' and offset == '1':
+            code.append('@R4')
             code.append('D=M')
         else:
             code.append('@{}'.format(offset))
@@ -43,15 +45,6 @@ class PushInstruction:
         code.extend(self.push_D_to_stack())
         return code
 
-    # def push_temp(self, param_type, offset):
-    #     code = []
-    #     address = int(offset) + 5
-    #     code.append('//push {} {}'.format(param_type, offset))
-    #     code.append('@{}'.format(address))
-    #     code.append('D=M')
-    #     code.extend(self.push_D_to_stack())
-    #     return code
-
     def pop(self, param_type, offset):
         code = []
         address_name = self.param_dic.get(param_type, '')
@@ -60,25 +53,34 @@ class PushInstruction:
         code.append('@SP')
         code.append('A=M-1')
         code.append('D=M')
-        # 把值存储到临时地址temp_value
-        code.append('@temp_value')
+        # 把值存储到临时地址R5
+        code.append('@R5')
         code.append('M=D')
-        # 找到要存储区段的地址，将地址存到临时地址temp_address
+        # 找到要存储区段的地址，将地址存到临时地址R6
         if param_type == 'temp':
             address = int(offset) + 5
             code.append('@{}'.format(address))
+            code.append('D=A')
+        elif param_type == 'static':
+            code.append('@Foo.{}'.format(offset))
+            code.append('D=A')
+        elif param_type == 'pointer' and offset == '0':
+            code.append('@R3')
+            code.append('D=A')
+        elif param_type == 'pointer' and offset == '1':
+            code.append('@R4')
             code.append('D=A')
         else:
             code.append('@{}'.format(offset))
             code.append('D=A')
             code.append('@{}'.format(address_name))
             code.append('D=D+M')
-        code.append('@temp_address')
+        code.append('@R6')
         code.append('M=D')
-        # 将此临时值temp_value存到区段地址temp_address
-        code.append('@temp_value')
+        # 将此临时值R5存到区段地址R6
+        code.append('@R5')
         code.append('D=M')
-        code.append('@temp_address')
+        code.append('@R6')
         code.append('A=M')
         code.append('M=D')
         # 当前stack指向前一个地址

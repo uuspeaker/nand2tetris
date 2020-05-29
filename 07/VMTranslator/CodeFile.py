@@ -24,12 +24,7 @@ class CodeFile:
         for instruction in instructions:
             # print('translate', line)
             if instruction[0] == 'push':
-                if instruction[1] == 'constant':
-                    code = push_ins.push_constant(instruction[2])
-                # elif instruction[1] == 'temp':
-                #     code = push_ins.push_temp(instruction[1], instruction[2])
-                else:
-                    code = push_ins.push_other(instruction[1], instruction[2])
+                code = push_ins.push_other(instruction[1], instruction[2])
             elif instruction[0] == 'pop':
                 code = push_ins.pop(instruction[1], instruction[2])
             else:
@@ -57,5 +52,7 @@ class CodeFile:
 
 # code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/SimpleAdd/SimpleAdd.vm')
 # code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/StackTest/StackTest.vm')
-code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/BasicTest/BasicTest.vm')
+# code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/BasicTest/BasicTest.vm')
+# code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/StaticTest/StaticTest.vm')
+code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/PointerTest/PointerTest.vm')
 code_file.generate_code_file()
