@@ -2,6 +2,7 @@ import os
 import re
 from CodeExtractor import CodeExtractor
 from ArithmeticInstruction import ArithmeticInstruction
+from PushInstruction import PushInstruction
 
 
 class CodeFile:
@@ -10,9 +11,6 @@ class CodeFile:
         self.src = src_value
         self.codes = []
 
-    def push_param(self, param_type, offset):
-        return 1
-
     def append_code(self, code):
         self.codes.extend(code)
 
@@ -20,25 +18,23 @@ class CodeFile:
         extractor = CodeExtractor(self.src)
         instructions = extractor.get_instruction()
         arithmetic_ins = ArithmeticInstruction()
+        push_ins = PushInstruction()
         lines = []
         print('instructions', instructions)
         for instruction in instructions:
             # print('translate', line)
             if instruction[0] == 'push':
                 if instruction[1] == 'constant':
-                    code = arithmetic_ins.push_stack(instruction[2])
-                    self.append_code(code)
+                    code = push_ins.push_constant(instruction[2])
+                # elif instruction[1] == 'temp':
+                #     code = push_ins.push_temp(instruction[1], instruction[2])
                 else:
-                    code = arithmetic_ins.push_param(instruction[1], instruction[2])
-                    self.append_code(code)
-                    code = arithmetic_ins.push_stack(instruction[2])
-                    self.append_code(code)
-
+                    code = push_ins.push_other(instruction[1], instruction[2])
             elif instruction[0] == 'pop':
-                continue
+                code = push_ins.pop(instruction[1], instruction[2])
             else:
                 code = arithmetic_ins.push_cal(instruction[0])
-                self.append_code(code)
+            self.append_code(code)
 
         print('get_instruction line size is ', len(lines))
         print(lines)
@@ -60,5 +56,6 @@ class CodeFile:
                 file.write(line + '\n')
 
 # code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/SimpleAdd/SimpleAdd.vm')
-code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/StackTest/StackTest.vm')
+# code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/StackTest/StackTest.vm')
+code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/BasicTest/BasicTest.vm')
 code_file.generate_code_file()

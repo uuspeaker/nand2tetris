@@ -3,16 +3,6 @@ class ArithmeticInstruction:
 
     lable_index = 0
 
-    start_address = {
-        'local': 0,
-        'argument': 1
-    }
-
-    cal_type = {
-        'add': 0,
-        'argument': 1
-    }
-
     jump_dic = {
         'eq': 'JEQ',
         'lt': 'JLT',
@@ -22,23 +12,8 @@ class ArithmeticInstruction:
         'ge': 'JGE',
     }
 
-    sp = 256
-
     def append_code(self, code):
         self.codes.append(code)
-
-    def push_stack(self, value):
-        self.sp += 1
-        code = []
-        code.append('//push constant ' + value)
-        code.append('@' + value)
-        code.append('D=A')
-        code.append('@SP')
-        code.append('A=M')
-        code.append('M=D')
-        code.append('@SP')
-        code.append('M=M+1')
-        return code
 
     def generate_label(self):
         self.lable_index += 1
