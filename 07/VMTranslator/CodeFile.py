@@ -1,20 +1,10 @@
 import os
 import re
 from CodeExtractor import CodeExtractor
+from ArithmeticInstruction import ArithmeticInstruction
+
 
 class CodeFile:
-
-    start_address = {
-        'local': 0,
-        'argument': 1
-    }
-
-    cal_type = {
-        'add': 0,
-        'argument': 1
-    }
-
-    sp = 256
 
     def __init__(self, src_value):
         self.src = src_value
@@ -24,48 +14,31 @@ class CodeFile:
         return 1
 
     def append_code(self, code):
-        self.codes.append(code)
-
-    def push_stack(self, value):
-        self.sp += 1
-        self.append_code('//push constant ' + value)
-        self.append_code('@' + value)
-        self.append_code('D=A')
-        self.append_code('@SP')
-        self.append_code('A=M')
-        self.append_code('M=D')
-        self.append_code('@SP')
-        self.append_code('M=M+1')
-
-    def push_cal(self, cal):
-        if cal == 'add':
-            self.append_code('//add')
-            self.append_code('@SP')
-            self.append_code('A=M-1')
-            self.append_code('D=M')
-            self.append_code('A=A-1')
-            self.append_code('M=D+M')
-            self.append_code('@SP')
-            self.append_code('M=M-1')
+        self.codes.extend(code)
 
     def extract_instruction(self):
         extractor = CodeExtractor(self.src)
         instructions = extractor.get_instruction()
+        arithmetic_ins = ArithmeticInstruction()
         lines = []
         print('instructions', instructions)
         for instruction in instructions:
             # print('translate', line)
             if instruction[0] == 'push':
                 if instruction[1] == 'constant':
-                    self.push_stack(instruction[2])
+                    code = arithmetic_ins.push_stack(instruction[2])
+                    self.append_code(code)
                 else:
-                    self.push_param(instruction[1], instruction[2])
-                    self.push_stack(instruction[2])
+                    code = arithmetic_ins.push_param(instruction[1], instruction[2])
+                    self.append_code(code)
+                    code = arithmetic_ins.push_stack(instruction[2])
+                    self.append_code(code)
 
             elif instruction[0] == 'pop':
                 continue
             else:
-                self.push_cal(instruction[0])
+                code = arithmetic_ins.push_cal(instruction[0])
+                self.append_code(code)
 
         print('get_instruction line size is ', len(lines))
         print(lines)
@@ -86,5 +59,6 @@ class CodeFile:
             for line in self.codes:
                 file.write(line + '\n')
 
-code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/SimpleAdd/SimpleAdd.vm')
+# code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/SimpleAdd/SimpleAdd.vm')
+code_file = CodeFile('D:/program/nand2tetris/07/StackArithmetic/StackTest/StackTest.vm')
 code_file.generate_code_file()
