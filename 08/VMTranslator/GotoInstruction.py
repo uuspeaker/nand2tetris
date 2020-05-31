@@ -14,6 +14,12 @@ class GotoInstruction:
         code.append('D;JGT')
         return code
 
+    def goto(self, label_name):
+        code = []
+        code.append('@{}'.format(label_name))
+        code.append('0;JMP')
+        return code
+
     def label(self, label_name):
         code = []
         code.append('({})'.format(label_name))

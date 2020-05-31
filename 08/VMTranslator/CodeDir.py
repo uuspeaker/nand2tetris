@@ -12,4 +12,5 @@ def extracte_code_dir(dir):
                 code_file = CodeFile(file_src)
                 code_file.generate_code_file()
 
-extracte_code_dir('D:/program/nand2tetris/08/ProgramFlow/BasicLoop/')
+# extracte_code_dir('D:/program/nand2tetris/08/ProgramFlow/BasicLoop/')
+extracte_code_dir('D:/program/nand2tetris/08/ProgramFlow/FibonacciSeries/')

@@ -30,10 +30,10 @@ class CodeFile:
                 code = push_ins.pop(instruction[1], instruction[2])
             elif instruction[0] == 'if-goto':
                 code = goto_ins.if_goto(instruction[1])
-                print('code', code)
+            elif instruction[0] == 'goto':
+                code = goto_ins.goto(instruction[1])
             elif instruction[0] == 'label':
                 code = goto_ins.label(instruction[1])
-                print('code', code)
             else:
                 code = arithmetic_ins.push_cal(instruction[0])
             self.append_code(code)
