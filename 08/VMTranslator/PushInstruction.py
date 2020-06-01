@@ -19,7 +19,7 @@ class PushInstruction:
     def push_other(self, param_type, offset):
         code = []
         address_name = self.param_dic.get(param_type, '')
-        code.append('//push {} {}'.format(param_type, offset))
+        # code.append('//push {} {}'.format(param_type, offset))
         if param_type == 'temp':
             address = int(offset) + 5
             code.append('@{}'.format(address))
@@ -48,7 +48,7 @@ class PushInstruction:
     def pop(self, param_type, offset):
         code = []
         address_name = self.param_dic.get(param_type, '')
-        code.append('//pop {} {}'.format(param_type, offset))
+        # code.append('//pop {} {}'.format(param_type, offset))
         # 获取当前stack顶端的值
         code.append('@SP')
         code.append('A=M-1')

@@ -54,7 +54,7 @@ class ArithmeticInstruction:
 
     def push_cal(self, cal):
         code = []
-        code.append('//=========={}=========='.format(cal))
+        # code.append('//=========={}=========='.format(cal))
         if cal == 'add':
             code.append('@SP')
             code.append('A=M-1')

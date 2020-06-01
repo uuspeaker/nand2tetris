@@ -7,6 +7,7 @@ class CodeExtractor:
     def __init__(self, src_value):
         self.src = src_value
 
+    # 获取文件中的所有行
     def get_lines(self):
         with open(self.src, 'r') as file:
             lines = file.readlines()
@@ -14,6 +15,7 @@ class CodeExtractor:
             # print(lines)
             return lines
 
+    # 获取有效的代码行，并却掉所有注释和前后空白
     def get_valid_lines(self):
         lines = self.get_lines()
         valid_lines = []
@@ -31,6 +33,7 @@ class CodeExtractor:
         print(valid_lines)
         return valid_lines
 
+    # 获取所有标签（因标签不占用行数，index不增长），后续翻译“跳转”时用index调换标签符号，以便实现跳转到对应代码行
     def extracte_lables(self, valid_lines):
         index = 0
         self.lable_lines = []
@@ -42,6 +45,7 @@ class CodeExtractor:
                 index = index + 1
         print('self.lable_lines', self.lable_lines)
 
+    # 翻译标签，把标签翻译成对应的行号index
     def get_index(self, value):
         if re.match('^\d+$', value):
             return value

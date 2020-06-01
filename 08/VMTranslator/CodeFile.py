@@ -3,7 +3,9 @@ import re
 from CodeExtractor import CodeExtractor
 from ArithmeticInstruction import ArithmeticInstruction
 from PushInstruction import PushInstruction
+from Instruction import Instruction
 from GotoInstruction import GotoInstruction
+from FunctionInstruction import FunctionInstruction
 
 
 class CodeFile:
@@ -19,11 +21,14 @@ class CodeFile:
         extractor = CodeExtractor(self.src)
         instructions = extractor.get_instruction()
         arithmetic_ins = ArithmeticInstruction()
+        ins = Instruction()
         push_ins = PushInstruction()
         goto_ins = GotoInstruction()
+        func_ins = FunctionInstruction()
         lines = []
         for instruction in instructions:
             # print('translate', instruction)
+            self.append_code(ins.comment(instruction))
             if instruction[0] == 'push':
                 code = push_ins.push_other(instruction[1], instruction[2])
             elif instruction[0] == 'pop':
@@ -34,6 +39,10 @@ class CodeFile:
                 code = goto_ins.goto(instruction[1])
             elif instruction[0] == 'label':
                 code = goto_ins.label(instruction[1])
+            elif instruction[0] == 'function':
+                code = func_ins.invoke(instruction[1], instruction[2], len(self.codes))
+            elif instruction[0] == 'return':
+                code = func_ins.return_code()
             else:
                 code = arithmetic_ins.push_cal(instruction[0])
             self.append_code(code)
