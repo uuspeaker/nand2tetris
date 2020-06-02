@@ -17,6 +17,13 @@ class CodeFile:
     def append_code(self, code):
         self.codes.extend(code)
 
+    def get_label_name(self, func_name, label):
+        if func_name != '':
+            label_name = func_name + '$' + label
+        else:
+            label_name = label
+        return label_name
+
     def extract_instruction(self):
         extractor = CodeExtractor(self.src)
         instructions = extractor.get_instruction()
@@ -26,6 +33,7 @@ class CodeFile:
         goto_ins = GotoInstruction()
         func_ins = FunctionInstruction()
         lines = []
+        func_name = ''
         for instruction in instructions:
             # print('translate', instruction)
             self.append_code(ins.comment(instruction))
@@ -34,14 +42,21 @@ class CodeFile:
             elif instruction[0] == 'pop':
                 code = push_ins.pop(instruction[1], instruction[2])
             elif instruction[0] == 'if-goto':
-                code = goto_ins.if_goto(instruction[1])
+                label_name = self.get_label_name(func_name, instruction[1])
+                code = goto_ins.if_goto(label_name)
             elif instruction[0] == 'goto':
-                code = goto_ins.goto(instruction[1])
+                label_name = self.get_label_name(func_name, instruction[1])
+                code = goto_ins.goto(label_name)
             elif instruction[0] == 'label':
-                code = goto_ins.label(instruction[1])
+                label_name = self.get_label_name(func_name, instruction[1])
+                code = goto_ins.label(label_name)
             elif instruction[0] == 'function':
-                code = func_ins.invoke(instruction[1], instruction[2], len(self.codes))
+                func_name = instruction[1]
+                code = func_ins.execute(instruction[1], instruction[2])
+            elif instruction[0] == 'call':
+                code = func_ins.call(instruction[1], instruction[2], len(self.codes))
             elif instruction[0] == 'return':
+                func_name = ''
                 code = func_ins.return_code()
             else:
                 code = arithmetic_ins.push_cal(instruction[0])
@@ -69,4 +84,7 @@ class CodeFile:
 # code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/BasicTest/BasicTest.vm')
 # code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/StaticTest/StaticTest.vm')
 # code_file = CodeFile('D:/program/nand2tetris/07/MemoryAccess/PointerTest/PointerTest.vm')
+# code_file = CodeFile('D:/program/nand2tetris/08/ProgramFlow/BasicLoop/BasicLoop.vm')
+# code_file = CodeFile('D:/program/nand2tetris/08/ProgramFlow/FibonacciSeries/FibonacciSeries.vm')
+# code_file = CodeFile('D:/program/nand2tetris/08/FunctionCalls/SimpleFunction/SimpleFunction.vm')
 # code_file.generate_code_file()

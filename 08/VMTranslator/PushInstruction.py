@@ -53,10 +53,10 @@ class PushInstruction:
         code.append('@SP')
         code.append('A=M-1')
         code.append('D=M')
-        # 把值存储到临时地址R5
-        code.append('@R5')
+        # 把值存储到临时地址R11
+        code.append('@R11')
         code.append('M=D')
-        # 找到要存储区段的地址，将地址存到临时地址R6
+        # 找到要存储区段的地址，将地址存到临时地址R12
         if param_type == 'temp':
             address = int(offset) + 5
             code.append('@{}'.format(address))
@@ -75,12 +75,12 @@ class PushInstruction:
             code.append('D=A')
             code.append('@{}'.format(address_name))
             code.append('D=D+M')
-        code.append('@R6')
+        code.append('@R12')
         code.append('M=D')
-        # 将此临时值R5存到区段地址R6
-        code.append('@R5')
+        # 将此临时值R11存到区段地址R12
+        code.append('@R11')
         code.append('D=M')
-        code.append('@R6')
+        code.append('@R12')
         code.append('A=M')
         code.append('M=D')
         # 当前stack指向前一个地址
