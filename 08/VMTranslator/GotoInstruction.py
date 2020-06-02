@@ -12,6 +12,10 @@ class GotoInstruction:
         # 判断a>0则跳转
         code.append('@{}'.format(label_name))
         code.append('D;JGT')
+        # 若a=-1则跳转（逻辑运算结果TRUE保存-1，FALSE保存0）
+        code.append('D=D+1')
+        code.append('@{}'.format(label_name))
+        code.append('D;JEQ')
         return code
 
     def goto(self, label_name):

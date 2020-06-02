@@ -39,6 +39,6 @@ def extracte_code_dir(dir, file_name, sp):
     # os.remove(vm_file_src)
 
 
-# extracte_code_dir('D:/program/nand2tetris/08/FunctionCalls/FibonacciElement/', 'FibonacciElement', 256)
-extracte_code_dir('D:/program/nand2tetris/08/FunctionCalls/NestedCall/', 'NestedCall', 261)
+extracte_code_dir('D:/program/nand2tetris/08/FunctionCalls/FibonacciElement/', 'FibonacciElement', 261)
+# extracte_code_dir('D:/program/nand2tetris/08/FunctionCalls/NestedCall/', 'NestedCall', 261)
 # extracte_code_dir('D:/program/nand2tetris/08/FunctionCalls/StaticsTest/', 'StaticsTest', 261)
