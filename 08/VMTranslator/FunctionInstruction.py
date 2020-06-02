@@ -101,7 +101,7 @@ class FunctionInstruction:
     def return_segment(self, index):
         code = []
         code.append('//获取return_segment上第{}个缓存值'.format(index))
-        code.append('@return_segment')
+        code.append('@R14')
         code.append('A=M-1')
         for i in range(index-1):
             code.append('A=A-1')
@@ -113,10 +113,10 @@ class FunctionInstruction:
 
         # =============恢复环境信息============
         # 保存参考点地址return_segment
-        code.append('//保存参考点地址return_segment')
+        code.append('//保存参考点地址return_segment到R14')
         code.append('@LCL')
         code.append('D=M')
-        code.append('@return_segment')
+        code.append('@R14')
         code.append('M=D')
 
         # =============恢复环境：处理和执行顺序无关的THAT, THIS, LCL============
@@ -138,26 +138,26 @@ class FunctionInstruction:
         code.append('M=D')
 
         # =============恢复环境：处理和执行顺序有关的return address, ARG, ============
-        # 1，获取return address，保存到临时变量R13
-        # 2，获取callee返回值，保存到临时变量R10
+        # 1，获取return address，保存到临时变量return_address
+        # 2，获取callee返回值，保存到临时变量return_value
         # 3，恢复SP地址，使处于callee环境中ARG的下一个位置
-        # 4，把callee返回值R10保存到ARG所在地址
+        # 4，把callee返回值return_value保存到ARG所在地址
         # 5，恢复ARG
-        # 6，代码跳转到R13保存的地址（return address）
+        # 6，代码跳转到return_address保存的地址（return address）
 
-        code.append('//获取return address，保存到临时变量R13')
+        code.append('//获取return address，保存到临时变量R15')
         code.extend(self.return_segment(5))
-        # 将return address，缓存到R13
-        code.append('@R13')
+        # 将return address，缓存到R15
+        code.append('@R15')
         code.append('M=D')
 
-        # 获取callee返回值
-        code.append('//获取callee返回值，保存到临时变量R10')
+        # 把callee返回值保存到ARG所在地址
+        code.append('//把callee返回值保存到ARG所在地址')
         code.append('@SP')
         code.append('A=M-1')
         code.append('D=M')
-        # 把callee返回值保存到R10
-        code.append('@R10')
+        code.append('@ARG')
+        code.append('A=M')
         code.append('M=D')
         # 恢复SP
         code.append('//恢复SP地址，使处于callee环境中ARG的下一个位置')
@@ -165,13 +165,6 @@ class FunctionInstruction:
         code.append('D=M')
         code.append('@SP')
         code.append('M=D+1')
-        # 把callee返回值R10保存到ARG所在地址
-        code.append('//把callee返回值R10保存到ARG所在地址')
-        code.append('@R10')
-        code.append('D=M')
-        code.append('@ARG')
-        code.append('A=M')
-        code.append('M=D')
 
         # 恢复ARG
         code.append('//恢复ARG')
@@ -179,9 +172,9 @@ class FunctionInstruction:
         code.append('@ARG')
         code.append('M=D')
 
-        # 代码跳转到R13保存的地址（return address）
-        code.append('//代码跳转到R13保存的地址（return address）')
-        code.append('@R13')
+        # 代码跳转到return_address保存的地址（return address）
+        code.append('//代码跳转到return_address保存的地址（R15）')
+        code.append('@R15')
         code.append('A=M')
         code.append('0;JMP')
         return code

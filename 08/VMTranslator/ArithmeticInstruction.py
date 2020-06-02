@@ -15,39 +15,41 @@ class ArithmeticInstruction:
     def append_code(self, code):
         self.codes.append(code)
 
-    def generate_label(self):
+    def generate_label(self, label):
         self.lable_index += 1
-        return 'lable' + str(self.lable_index)
+        return label + str(self.lable_index)
 
     def generate_logic(self, param):
         code = []
         jump_flag = self.jump_dic.get(param)
-        lable1 = self.generate_label()
-        lable2 = self.generate_label()
+        label_true = self.generate_label('sys.label_true')
+        label_end = self.generate_label('sys.label_end')
 
+        code.append('//获取b值')
         code.append('@SP')
         code.append('A=M-1')
         code.append('D=M')
+        code.append('//计算a-b的值')
         code.append('A=A-1')
         code.append('D=M-D')
-
-        code.append('@{}'.format(lable1))
+        code.append('//若a-b {} 0, 则跳转到{}'.format(param, label_true))
+        code.append('@{}'.format(label_true))
         code.append('D;{}'.format(jump_flag))
-
+        code.append('//否则继续执行下面代码')
         code.append('@SP')
         code.append('A=M-1')
         code.append('A=A-1')
         code.append('M=0')
-        code.append('@{}'.format(lable2))
+        code.append('@{}'.format(label_end))
         code.append('0;JMP')
 
-        code.append('({})'.format(lable1))
+        code.append('({})'.format(label_true))
         code.append('@SP')
         code.append('A=M-1')
         code.append('A=A-1')
         code.append('M=-1')
 
-        code.append('({})'.format(lable2))
+        code.append('({})'.format(label_end))
         code.append('@SP')
         code.append('M=M-1')
         return code
@@ -97,5 +99,5 @@ class ArithmeticInstruction:
             code.append('M=-M')
         elif self.jump_dic.get(cal, 'not_found') != 'not_found':
             code.extend(self.generate_logic(cal))
-
+        code.append('//运算结束')
         return code
