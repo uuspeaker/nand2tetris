@@ -1,0 +1,188 @@
+class BallGame{
+    field Array ballArray;
+    field int ballCount;
+    field Ball ball;
+    field int ballSize;
+    field int level;
+    field boolean isExit;
+    field Ball ball;
+    field int xPosition;
+    field int yPosition;
+    field int timeCount;
+    field int lastLauchTime;
+
+    constructor BallGame new(){
+        let ballArray = Array.new(100);
+        let ballCount = 0;
+        let ballSize = 5;
+        let level = 1;
+        let isExit = false;
+
+        let xPosition = 255;
+        let yPosition = 127;
+        let timeCount = 0;
+        let lastLauchTime = -1000;
+        return this;
+    }
+
+    method int getBallAmount(){
+        return ballCount;
+    }
+
+    method void launchBall(){
+        if(timeCount - lastLauchTime < 20){
+            return;
+        }
+        if(ballCount = 99){
+            return;
+        }
+        //do ScreenShow.showStringAndInt("Launch a new ball ", ballCount);
+        let ballArray[ballCount] = Ball.new(xPosition, yPosition, ballSize, this);
+        let ballCount = ballCount + 1;
+        let lastLauchTime = timeCount;
+        return;
+    }
+
+    method int getLevel(){
+        return level;
+    }
+
+    method boolean isGaming(){
+        return ~isExit;
+    }
+
+    method void incSize() {
+       if (((ballSize) < 254) & ((ballSize) < 510)) {
+          let ballSize = ballSize + 2;
+       }
+       return;
+    }
+
+    /** Decrements the square size by 2 pixels. */
+    method void decSize() {
+       if (ballSize > 2) {
+          let ballSize = ballSize - 2;
+       }
+       return;
+    }
+
+    method void incLevel(){
+        let level = level + 1;
+        return;
+    }
+
+    method void decLevel(){
+        if(level = 1){
+            return;
+        }
+        let level = level - 1;
+        return;
+    }
+
+    method void drawSampleBall(){
+        do Screen.setColor(true);
+        do Screen.drawCircle(xPosition, yPosition, 5);
+        do Screen.setColor(false);
+        do Screen.drawCircle(xPosition, yPosition, 4);
+        return;
+    }
+
+    method void clearSampleBall(){
+        do Screen.setColor(false);
+        do Screen.drawCircle(xPosition, yPosition, 5);
+        return;
+    }
+
+    method void run() {
+       var char key;  // the key currently pressed by the user
+
+       do ScreenShow.showString("Game Start");
+
+
+       while (~isExit) {
+          do drawSampleBall();
+          // waits for a key to be pressed
+          while (key = 0) {
+             let key = Keyboard.keyPressed();
+             do moveBall();
+             do drawSampleBall();
+          }
+          //do ScreenShow.showStringAndInt("press key ", key);
+          if (key = 81)  { let isExit = true; }     // q key
+          if (key = 90)  { do incLevel(); } // z key
+          if (key = 88)  { do decLevel(); } // x key
+          if (key = 130) { do incLeftSpeed(); }   // left arrow
+          if (key = 131) { do incUpSpeed(); }   // up arrow
+          if (key = 132) { do incRightSpeed(); }   // right arrow
+          if (key = 133) { do incDownSpeed(); }   // down arrow
+          if (key = 32) { do launchBall(); } //backspace for launch new ball
+          let key = 0;
+          do Sys.wait(50);
+
+      }
+      do ScreenShow.showString("Game Over");
+      return;
+    }
+
+    method void moveBall(){
+       var int i;
+       let i = 0;
+       while(i < ballCount){
+          let ball = ballArray[i];
+          do ball.run();
+          let i = i + 1;
+       }
+       do Sys.wait(10);
+       let timeCount = timeCount + 1;
+       return;
+    }
+
+    method void dispose() {
+       var int i;
+       let i = 0;
+       while(i < ballCount){
+          do Memory.deAlloc(ballArray[i]);
+          let i = i + 1;
+       }
+       do Memory.deAlloc(ballArray);
+       do Memory.deAlloc(this);
+       return;
+    }
+
+    method void incLeftSpeed(){
+        do clearSampleBall();
+        if((xPosition - 5 > ballSize) & (xPosition - 5 + ballSize < 510)){
+            let xPosition = xPosition - 5;
+        }
+        do drawSampleBall();
+        return;
+    }
+
+    method void incRightSpeed(){
+        do clearSampleBall();
+        if((xPosition + 5 > ballSize) & (xPosition + 5 + ballSize < 510)){
+            let xPosition = xPosition + 5;
+        }
+        do drawSampleBall();
+        return;
+    }
+
+    method void incUpSpeed(){
+        do clearSampleBall();
+        if((yPosition - 5 > ballSize) & (yPosition - 5 + ballSize < 254)){
+            let yPosition = yPosition - 5;
+        }
+        do drawSampleBall();
+        return;
+    }
+
+    method void incDownSpeed(){
+        do clearSampleBall();
+        if((yPosition + 5 > ballSize) & (yPosition + 5 + ballSize < 254)){
+            let yPosition = yPosition + 5;
+        }
+        do drawSampleBall();
+        return;
+    }
+
+}

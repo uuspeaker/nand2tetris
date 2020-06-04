@@ -1,0 +1,188 @@
+function Ball.new 0
+push constant 5
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+push argument 2
+add
+pop this 0
+push argument 1
+push argument 2
+add
+pop this 1
+push argument 2
+pop this 2
+push argument 3
+pop this 4
+push this 4
+call Speed.new 1
+pop this 3
+push pointer 0
+return
+function Ball.run 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Ball.draw 1
+pop temp 0
+push pointer 0
+call Ball.move 1
+pop temp 0
+push constant 0
+return
+function Ball.draw 0
+push argument 0
+pop pointer 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 2
+call Screen.drawCircle 3
+pop temp 0
+push constant 0
+return
+function Ball.clear 0
+push argument 0
+pop pointer 0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 2
+call Screen.drawCircle 3
+pop temp 0
+push constant 0
+return
+function Ball.move 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Ball.clear 1
+pop temp 0
+push pointer 0
+call Ball.moveHorizontal 1
+pop temp 0
+push pointer 0
+call Ball.moveVertical 1
+pop temp 0
+push pointer 0
+call Ball.draw 1
+pop temp 0
+push constant 0
+return
+function Ball.moveHorizontal 1
+push argument 0
+pop pointer 0
+push this 3
+call Speed.getHorizontalSpeed 1
+push this 0
+add
+pop local 0
+push this 2
+push local 0
+add
+push constant 510
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 1020
+push local 0
+sub
+push this 2
+push constant 2
+call Math.multiply 2
+sub
+pop this 0
+push this 3
+call Speed.reverseHorizontalSpeed 1
+pop temp 0
+push constant 0
+return
+label IF_FALSE0
+push local 0
+push this 2
+lt
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 2
+push constant 2
+call Math.multiply 2
+push local 0
+sub
+pop this 0
+push this 3
+call Speed.reverseHorizontalSpeed 1
+pop temp 0
+push constant 0
+return
+label IF_FALSE1
+push local 0
+pop this 0
+push constant 0
+return
+function Ball.moveVertical 1
+push argument 0
+pop pointer 0
+push this 3
+call Speed.getVerticalSpeed 1
+push this 1
+add
+pop local 0
+push this 2
+push local 0
+add
+push constant 254
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 508
+push local 0
+sub
+push this 2
+push constant 2
+call Math.multiply 2
+sub
+pop this 1
+push this 3
+call Speed.reverseVerticalSpeed 1
+pop temp 0
+push constant 0
+return
+label IF_FALSE0
+push local 0
+push this 2
+lt
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 2
+push constant 2
+call Math.multiply 2
+push local 0
+sub
+pop this 1
+push this 3
+call Speed.reverseVerticalSpeed 1
+pop temp 0
+push constant 0
+return
+label IF_FALSE1
+push local 0
+pop this 1
+push constant 0
+return
+function Ball.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return

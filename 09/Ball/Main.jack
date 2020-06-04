@@ -1,0 +1,10 @@
+class Main {
+    function void main() {
+        var BallGame game;
+        let game = BallGame.new();
+        do Output.moveCursor(1, 1);
+        do game.run();
+        do game.dispose();
+        return;
+    }
+}

@@ -1,0 +1,100 @@
+
+class Ball{
+
+    field int x, y;
+    field int radius;
+    field Speed speed;
+    field BallGame game;
+
+    constructor Ball new(int xPosition, int yPosition, int ballRadius, BallGame ballGame){
+        let x = xPosition + ballRadius;
+        let y = yPosition + ballRadius;
+        let radius = ballRadius;
+        let game = ballGame;
+        let speed = Speed.new(game);
+        return this;
+    }
+
+    method void run(){
+        do draw();
+        do move();
+        return;
+    }
+
+    method void draw() {
+       //do ScreenShow.showString("start to draw");
+       do Screen.setColor(true);
+       do Screen.drawCircle(x, y, radius);
+       return;
+    }
+
+    method void clear() {
+       //do ScreenShow.showString("start to draw");
+       do Screen.setColor(false);
+       do Screen.drawCircle(x, y, radius);
+       return;
+    }
+
+    /*运动时，每运动10ms更新一次位置*/
+    method void move(){
+        //do ScreenShow.showString("start to move");
+        do clear();
+        do moveHorizontal();
+        do moveVertical();
+        do draw();
+        return;
+    }
+
+    /*水平运动，碰到垂直边缘时反弹*/
+    method void moveHorizontal(){
+        var int horizontalPosition;
+        let horizontalPosition = speed.getHorizontalSpeed() + x;
+        /*若超过右屏幕，则反弹并调转方向*/
+        if(radius + horizontalPosition > 510){
+            //do ScreenShow.showString("touch right");
+            let x = 1020 - horizontalPosition - (radius * 2);
+            do speed.reverseHorizontalSpeed();
+            return;
+        }
+        /*若超过左屏幕，则反弹并调转方向*/
+        if(horizontalPosition < radius){
+            //do ScreenShow.showString("touch left");
+            let x = (radius * 2) - horizontalPosition;
+            do speed.reverseHorizontalSpeed();
+            return;
+        }
+        /*若没有超过屏幕，则只更新位置*/
+        //do ScreenShow.showStringAndInt("new x position ", horizontalPosition);
+        let x = horizontalPosition;
+        return;
+    }
+
+    method void moveVertical(){
+        var int verticalPosition;
+        let verticalPosition = speed.getVerticalSpeed() + y;
+        /*若超过下屏幕，则反弹并调转方向*/
+        if(radius + verticalPosition > 254){
+            //do ScreenShow.showStringAndInt("touch bottom", verticalPosition);
+            let y = 508 - verticalPosition - (radius * 2);
+            do speed.reverseVerticalSpeed();
+            return;
+        }
+        if(verticalPosition < radius){
+            /*若超过上屏幕，则反弹并调转方向*/
+            //do ScreenShow.showString("touch top");
+            let y = (radius * 2) - verticalPosition;
+            do speed.reverseVerticalSpeed();
+            return;
+        }
+        /*若没有超过屏幕，则只更新位置*/
+        //do ScreenShow.showStringAndInt("new y position ", verticalPosition);
+        let y = verticalPosition;
+        return;
+    }
+
+    method void dispose() {
+       do Memory.deAlloc(this);
+       return;
+    }
+
+}

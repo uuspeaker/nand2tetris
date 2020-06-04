@@ -1,0 +1,22 @@
+class ScreenShow{
+
+    function void showString(String strValue){
+        do Output.printString(strValue);
+        do Output.println();
+        return;
+    }
+
+    function void showInt(String intValue){
+        do Output.printInt(intValue);
+        do Output.println();
+        return;
+    }
+
+    function void showStringAndInt(String strValue, int intValue){
+        do Output.printString(strValue);
+        //do Output.backspace();
+        do Output.printInt(intValue);
+        do Output.println();
+        return;
+    }
+}

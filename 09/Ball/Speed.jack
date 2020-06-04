@@ -1,0 +1,35 @@
+class Speed{
+    field BallGame game;
+    field int horizontalSpeedFlag;
+    field int verticalSpeedFlag;
+    field ini initSpeedX;
+    field ini initSpeedY;
+
+    constructor Speed new(BallGame ballGame){
+        let game = ballGame;
+        let initSpeedX = Math.sqrt(ballGame.getBallAmount() * 3 + 5);
+        let initSpeedY = Math.sqrt(ballGame.getBallAmount() * 3 + 300) / 7;
+        let horizontalSpeedFlag = 1;
+        let verticalSpeedFlag = 1;
+        return this;
+    }
+
+    method int getHorizontalSpeed(){
+        return initSpeedX * game.getLevel() * horizontalSpeedFlag;
+    }
+
+    method int getVerticalSpeed(){
+        return initSpeedY * game.getLevel() * verticalSpeedFlag;
+    }
+
+    method void reverseHorizontalSpeed(){
+        let horizontalSpeedFlag = 0 - horizontalSpeedFlag;
+        return;
+    }
+
+    method void reverseVerticalSpeed(){
+        let verticalSpeedFlag = 0 - verticalSpeedFlag;
+        return;
+    }
+
+}
