@@ -11,4 +11,6 @@ def extracte_code_dir(dir):
                 parser.generate_xml()
 
 
-extracte_code_dir('D:/program/nand2tetris/10/ArrayTest/')
+# extracte_code_dir('D:/program/nand2tetris/10/ArrayTest/')
+# extracte_code_dir('D:/program/nand2tetris/10/ExpressionLessSquare/')
+extracte_code_dir('D:/program/nand2tetris/10/Square/')

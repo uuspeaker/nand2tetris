@@ -80,8 +80,6 @@ class JackTokenizer:
 
     def record_token(self, token):
         word = self.sentence[self.begin: self.end].strip()
-        if(self.current_status == 4):
-            print('word', self.sentence[self.begin: self.end])
         word = self.replace_special_char(word)
         if(self.current_status == 4):
             word = word.replace('"','')
