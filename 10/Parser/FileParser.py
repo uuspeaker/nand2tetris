@@ -43,15 +43,15 @@ class FileParser:
         newFileName = fileName + '3.xml'
         print('newFileName: ', newFileName)
         self.extract_instruction()
-        codes = self.codes[1: len(self.codes) - 2]
+        codes = self.codes[1: len(self.codes) - 1]
         compiler = CompilationEngine(codes)
-        xml_code = compiler.compile_class()
+        xml_code = compiler.compile()
         # print('汇编代码', self.codes)
         with open(path + '/' + newFileName, 'w+') as file:
             for line in xml_code:
                 file.write(line + '\n')
 
-parser = FileParser('D:/program/nand2tetris/10/ArrayTest/Main.jack')
+parser = FileParser('D:/program/nand2tetris/10/ExpressionLessSquare/Main.jack')
 parser.generate_grammer()
 # parser.test()
 
