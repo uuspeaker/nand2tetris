@@ -185,7 +185,7 @@ class CompilationEngine:
         self.eat_value('let')
         self.eat_name('identifier')
         if self.is_value('['):
-            self.eat_current()
+            self.eat_value('[')
             self.compile_expression()
             self.eat_value(']')
         self.eat_value('=')
@@ -270,7 +270,7 @@ class CompilationEngine:
                 self.eat_value('[')
                 self.compile_expression()
                 self.eat_value(']')
-        elif self.is_name('identifier') and self.is_next_value('('):
+        elif self.is_name('identifier') and (self.is_next_value('(') or self.is_next_value('.')):
             # 如果是子程序调用name(expressionList)
             self.compile_subroutine_call()
         elif self.is_name('identifier'):
@@ -307,7 +307,7 @@ class CompilationEngine:
     def compile_expression(self):
         self.write('<expression>')
         self.compile_term()
-        if self.is_value(['+', '-', '=', '&gt;', '&lt;', '/', '&', '|']):
+        if self.is_value(['+', '-', '*', '/', '=', '&gt;', '&lt;', '&', '|']):
             self.eat_current()
             self.compile_term()
         self.write('</expression>')
