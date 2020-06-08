@@ -6,6 +6,7 @@ class CompilationEngine:
         self.old_tokens = tokens
         self.new_tokens = []
         self.token_indx = 0
+        self.code_counter = 0
 
     def compile(self):
         try:
@@ -21,7 +22,7 @@ class CompilationEngine:
         self.eat_name('identifier')
         self.eat_value('{')
         # 下面的内容必须为0个或多个classVarDex, subroutineDec
-        while (True):
+        while (self.while_true()):
             if self.is_value(['static', 'field']):
                 self.write('<classVarDec>')
                 self.eat_value(['static', 'field'])
@@ -59,6 +60,14 @@ class CompilationEngine:
         else:
             return False
 
+    def is_next_value(self, value_range):
+        if self.get_next_token_value() == '':
+            return False
+        if self.get_next_token_value() in value_range:
+            return True
+        else:
+            return False
+
     def is_name_value(self, name_range, value_range):
         return self.is_name(name_range) and self.is_value(value_range)
 
@@ -89,6 +98,9 @@ class CompilationEngine:
     def get_current_token_value(self):
         return self.get_token_value_by_index(self.token_indx)
 
+    def get_next_token_value(self):
+        return self.get_token_value_by_index(self.token_indx + 1)
+
     def get_token_value_by_index(self, index):
         return self.get_token_content(r'> (.+) <', index)
 
@@ -110,7 +122,7 @@ class CompilationEngine:
 
     def compile_statements(self):
         self.write('<statements>')
-        while True:
+        while self.while_true():
             if self.is_value('if'):
                 self.compile_if_statement()
             elif self.is_value('while'):
@@ -155,18 +167,15 @@ class CompilationEngine:
     def compile_do_statement(self):
         self.write('<doStatement>')
         self.eat_value('do')
-        self.eat_name('identifier')
-        self.eat_value('.')
-        self.eat_name('identifier')
-        self.eat_value('(')
-        self.compile_expression_list()
-        self.eat_value(')')
+        self.compile_subroutine_call()
         self.eat_value(';')
         self.write('</doStatement>')
 
     def compile_return_statement(self):
         self.write('<returnStatement>')
         self.eat_value('return')
+        if not self.is_value(';'):
+            self.compile_expression()
         self.eat_value(';')
         self.write('</returnStatement>')
         return
@@ -199,7 +208,7 @@ class CompilationEngine:
         self.write('<subroutineBody>')
         self.eat_value('{')
 
-        while (True):
+        while self.while_true():
             if self.is_value('var'):
                 self.write('<varDec>')
                 self.eat_value('var')
@@ -217,12 +226,13 @@ class CompilationEngine:
         self.eat_value('(')
         self.write('<parameterList>')
         index = 0
-        while (True):
+        while self.while_true():
             # 如果参数没有结束
             if self.is_value(')'):
                 break
             if self.is_value(','):
                 # 如果是逗号，表示后面还有参数
+                self.eat_value(',')
                 self.compile_type()
             else:
                 self.compile_type()
@@ -253,26 +263,19 @@ class CompilationEngine:
         elif self.is_value(['true', 'false', 'null', 'this']):
             # 如果是关键字常量
             self.eat_current()
-        elif self.is_name('identifier'):
-            # 如果是变量名称name
-            self.eat_current()
+        elif self.is_name('identifier') and self.is_next_value('['):
             # 如果是数组name[expression]
+            self.eat_current()
             if self.is_value('['):
                 self.eat_value('[')
                 self.compile_expression()
                 self.eat_value(']')
+        elif self.is_name('identifier') and self.is_next_value('('):
             # 如果是子程序调用name(expressionList)
-            if self.is_value('('):
-                self.eat_value('(')
-                self.compile_expression_list()
-                self.eat_value(')')
-            # 如果是子程序调用name.name(expressionList)
-            if self.is_value('.'):
-                self.eat_value('.')
-                self.eat_name('identifier')
-                self.eat_value('(')
-                self.compile_expression_list()
-                self.eat_value(')')
+            self.compile_subroutine_call()
+        elif self.is_name('identifier'):
+            # 如果是变量名称name
+            self.eat_current()
         elif self.is_value('('):
             # 如果是带括号的表达式
             self.eat_value('(')
@@ -285,6 +288,21 @@ class CompilationEngine:
         else:
             self.raise_exception('必须为term表达式')
         self.write('</term>')
+
+    def compile_subroutine_call(self):
+        # 如果是子程序调用name(expressionList)
+        self.eat_name('identifier')
+        if self.is_value('('):
+            self.eat_value('(')
+            self.compile_expression_list()
+            self.eat_value(')')
+        # 如果是子程序调用name.name(expressionList)
+        if self.is_value('.'):
+            self.eat_value('.')
+            self.eat_name('identifier')
+            self.eat_value('(')
+            self.compile_expression_list()
+            self.eat_value(')')
 
     def compile_expression(self):
         self.write('<expression>')
@@ -299,6 +317,7 @@ class CompilationEngine:
         if not self.is_value(')'):
             self.compile_expression()
             while self.is_value(','):
+                self.eat_value(',')
                 self.compile_expression()
         self.write('</expressionList>')
 
@@ -307,6 +326,13 @@ class CompilationEngine:
 
     def is_var_name(self):
         return re.match(r'^[a-zA-Z_]\w*', self.get_current_token_value())
+
+    def while_true(self):
+        self.code_counter += 1
+        if(self.code_counter <= len(self.old_tokens)):
+            return True
+        else:
+            self.raise_exception('循环次数过多')
 
     def raise_exception(self, value):
         pre_code = ''

@@ -24,4 +24,6 @@ def extracte_grammer(dir):
 # extracte_token('D:/program/nand2tetris/10/Square/')
 
 
-extracte_grammer('D:/program/nand2tetris/10/ArrayTest/')
+# extracte_grammer('D:/program/nand2tetris/10/ArrayTest/')
+# extracte_grammer('D:/program/nand2tetris/10/ExpressionLessSquare/')
+extracte_grammer('D:/program/nand2tetris/10/Square/')

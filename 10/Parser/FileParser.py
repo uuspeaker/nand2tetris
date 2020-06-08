@@ -37,11 +37,12 @@ class FileParser:
 
     def generate_grammer(self):
         path = os.path.dirname(self.src)
-        print('path', path)
+
         fileName = os.path.basename(self.src)
         fileName = re.findall(r'(.*)\.', fileName)[0]
+        print('翻译文件', path + '/' + fileName + '.xml')
         newFileName = fileName + '3.xml'
-        print('newFileName: ', newFileName)
+        print('翻译后文件: ', newFileName)
         self.extract_instruction()
         codes = self.codes[1: len(self.codes) - 1]
         compiler = CompilationEngine(codes)

@@ -36,7 +36,6 @@ class CodeExtractor:
                 continue
             valid_lines.append(self.format_content(line))
         print('有效代码行数 ', len(valid_lines))
-        print(valid_lines)
         return valid_lines
 
     def get_instruction(self):
