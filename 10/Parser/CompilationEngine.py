@@ -71,12 +71,12 @@ class CompilationEngine:
     # 如果传入value_range则检查当前token必须在传入值范围内
     def eat_value(self, value_range):
         if not self.is_value(value_range):
-            self.raise_exception('token值必须为 {}'.format(value_range))
+            self.raise_exception(value_range)
         self.eat_current()
 
     def eat_current(self):
         self.write(self.get_current_token())
-        print('翻译完成:{}'.format(self.get_current_token()))
+        # print('翻译完成:{}'.format(self.get_current_token()))
         self.token_indx += 1
 
     def has_name_value(self, name_range, value_range):
@@ -84,15 +84,18 @@ class CompilationEngine:
         self.eat_value(value_range)
 
     def get_current_token_name(self):
-        return self.get_token_content(r'<(\w+)>')
+        return self.get_token_content(r'<(\w+)>', self.token_indx)
 
     def get_current_token_value(self):
-        return self.get_token_content(r'> (.+) <')
+        return self.get_token_value_by_index(self.token_indx)
 
-    def get_token_content(self, re_exp):
-        if self.token_indx == len(self.old_tokens):
+    def get_token_value_by_index(self, index):
+        return self.get_token_content(r'> (.+) <', index)
+
+    def get_token_content(self, re_exp, index):
+        if index == len(self.old_tokens):
             return ''
-        current_token = self.old_tokens[self.token_indx]
+        current_token = self.old_tokens[index]
         # print('current_token', current_token)
         names = re.findall(re_exp, current_token)
         if len(names) == 0:
@@ -141,6 +144,12 @@ class CompilationEngine:
     def compile_while_statement(self):
         self.write('<whileStatement>')
         self.eat_value('while')
+        self.eat_value('(')
+        self.compile_expression()
+        self.eat_value(')')
+        self.eat_value('{')
+        self.compile_statements()
+        self.eat_value('}')
         self.write('</whileStatement>')
 
     def compile_do_statement(self):
@@ -150,11 +159,7 @@ class CompilationEngine:
         self.eat_value('.')
         self.eat_name('identifier')
         self.eat_value('(')
-        self.write('<expressionList>')
-        # 如果没有以)结束，则下面必须为表达式
-        if not self.is_value(')'):
-            self.compile_expression_list()
-        self.write('</expressionList>')
+        self.compile_expression_list()
         self.eat_value(')')
         self.eat_value(';')
         self.write('</doStatement>')
@@ -242,62 +247,60 @@ class CompilationEngine:
 
     def compile_term(self):
         self.write('<term>')
-        if self.is_array():
-            # 如果是数组格式
-            self.eat_current()
-        elif self.is_name(['integerConstant', 'stringConstant']):
+        if self.is_name(['integerConstant', 'stringConstant']):
             # 如果是数字或字符串
             self.eat_current()
         elif self.is_value(['true', 'false', 'null', 'this']):
             # 如果是关键字常量
             self.eat_current()
         elif self.is_name('identifier'):
-            # 如果是变量名称
+            # 如果是变量名称name
             self.eat_current()
-        elif self.is_subtoutine_call():
-            # 如果是子程序调用
-            self.eat_current()
-        elif self.is_subtoutine_call():
+            # 如果是数组name[expression]
+            if self.is_value('['):
+                self.eat_value('[')
+                self.compile_expression()
+                self.eat_value(']')
+            # 如果是子程序调用name(expressionList)
+            if self.is_value('('):
+                self.eat_value('(')
+                self.compile_expression_list()
+                self.eat_value(')')
+            # 如果是子程序调用name.name(expressionList)
+            if self.is_value('.'):
+                self.eat_value('.')
+                self.eat_name('identifier')
+                self.eat_value('(')
+                self.compile_expression_list()
+                self.eat_value(')')
+        elif self.is_value('('):
             # 如果是带括号的表达式
-            self.eat_current()
-        elif self.is_subtoutine_call():
+            self.eat_value('(')
+            self.compile_expression()
+            self.eat_value(')')
+        elif self.is_value(['-', '~']):
             # 如果是(~|-) term
-            self.eat_current()
+            self.eat_value(['-', '~'])
+            self.compile_term()
         else:
-            self.raise_exception('必须为表达式')
+            self.raise_exception('必须为term表达式')
         self.write('</term>')
-
-    def is_subtoutine_call(self):
-        return
-
-    def is_array(self):
-        return
-
-    def is_term(self):
-        value = self.get_current_token_value()
-        # 如果是数字
-        if re.match(r'\d+', value):
-            return True
-        # 如果是字符串
-        # 如果是关键字常量
-        # 如果是变量名称
-        # 如果是数组格式
-        # 如果是子程序调用
-        # 如果是带括号的表达式
-        # 如果是(~|-) term
 
     def compile_expression(self):
         self.write('<expression>')
         self.compile_term()
-        if self.is_value(['+', '-', '=', '>', '<', '/', '&', '|']):
+        if self.is_value(['+', '-', '=', '&gt;', '&lt;', '/', '&', '|']):
             self.eat_current()
             self.compile_term()
         self.write('</expression>')
 
     def compile_expression_list(self):
-        self.compile_expression()
-        while self.is_value(','):
+        self.write('<expressionList>')
+        if not self.is_value(')'):
             self.compile_expression()
+            while self.is_value(','):
+                self.compile_expression()
+        self.write('</expressionList>')
 
     def is_number(self):
         return re.match(r'\d+', self.get_current_token_value())
@@ -306,6 +309,12 @@ class CompilationEngine:
         return re.match(r'^[a-zA-Z_]\w*', self.get_current_token_value())
 
     def raise_exception(self, value):
-        print('翻译:{}'.format(self.get_current_token()))
-        print('错误：', value)
+        pre_code = ''
+        code_count = 10
+        for i in range(code_count):
+            code = self.get_token_value_by_index(self.token_indx - code_count + i)
+            pre_code = pre_code + ' ' + code
+        print('代码:{}'.format(pre_code))
+        print('预期得到{},实际得到{}'.format(value, self.get_current_token_value()))
         raise Exception(value)
+

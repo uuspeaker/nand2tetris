@@ -51,7 +51,7 @@ class FileParser:
             for line in xml_code:
                 file.write(line + '\n')
 
-parser = FileParser('D:/program/nand2tetris/10/ExpressionLessSquare/Main.jack')
-parser.generate_grammer()
+# parser = FileParser('D:/program/nand2tetris/10/ExpressionLessSquare/Main.jack')
+# parser.generate_grammer()
 # parser.test()
 
