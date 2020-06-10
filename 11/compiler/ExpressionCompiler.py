@@ -2,12 +2,29 @@ from Log import logger
 
 class ExpressionCompiler:
 
+    op_dic = {
+        '+': 'add',
+        '-': 'sub',
+        '*': 'call Math.multiply 2',
+        '/': 'call Math.divide 2',
+        '&': 'and',
+        '|': 'or',
+        '>': 'gt',
+        '<': 'lt',
+        '=': 'eq',
+    }
+
     def __init__(self, function_id, symbol_table, expression):
         self.function_id = function_id
         self.expression = expression
         self.symbol_table = symbol_table
         self.vm_vode = []
 
+    def get_op(self, value):
+        return self.op_dic.get(value, '')
+
+    def get_vm_code(self):
+        return self.vm_vode
 
     def recognize_items(self, expression):
         items = expression.find_all(['term','symbol'], recursive=False)
@@ -45,7 +62,7 @@ class ExpressionCompiler:
         return name
 
     def compile(self):
-        logger.debug(self.expression)
+        # logger.debug(self.expression)
         exp_items = self.recognize_items(self.expression)
         logger.debug('第一步：xml转化成exp，op，func，以下为本次转化后的结果')
         logger.debug(exp_items)
@@ -81,14 +98,15 @@ class ExpressionCompiler:
                 logger.error('未知的表达式item1:{}'.format(item1))
                 raise Exception('未知的表达式item1:{}'.format(item1))
         elif item1['item'] == 'op' and item2['item'] == 'exp':
-            self.compile_item(items[1:2])
-            self.vm_vode.append('{}'.format(item1.value))
-            self.return_item(item3)
+            self.compile_item([item2])
+            code = self.get_op(item1.value)
+            self.vm_vode.append('{}'.format(code))
+            logger.info(code)
         elif item1['item'] == 'exp' and item2['item'] == 'op' and item3['item'] == 'exp':
             # logger.info('enter into exp-op-exp')
             self.compile_item([item1])
             self.compile_item([item3])
-            code = '{}'.format(item2['value'])
+            code = '{}'.format(self.get_op(item2['value']))
             self.vm_vode.append(code)
             logger.info(code)
         elif item1['type'] == 'func':
