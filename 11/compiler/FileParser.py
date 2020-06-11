@@ -69,6 +69,7 @@ class FileParser:
                 file.write(line + '\n')
 
 parser = FileParser('D:/program/nand2tetris/11/Seven/Main.xml')
+# parser = FileParser('D:/program/nand2tetris/11/ConvertToBin/Main.xml')
 parser.generate_vm()
 
 
