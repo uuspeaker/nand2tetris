@@ -8,7 +8,7 @@ import re
 
 class JackCompiler:
 
-    label_index = 1
+    label_index = 0
 
     def __init__(self, src):
         self.src = src
@@ -33,25 +33,46 @@ class JackCompiler:
             logger.info('处理第{}个方法'.format(index))
             if subroutine_dec.find().text == 'function':
                 self.compile_function_define(subroutine_dec)
+            elif subroutine_dec.find().text == 'constructor':
+                self.compile_constructor_define(subroutine_dec)
+            elif subroutine_dec.find().text == 'method':
+                self.compile_method_define(subroutine_dec)
+            else:
+                raise Exception('未知的结构：{}'.format(subroutine_dec))
             logger.info('第{}个方法处理完成'.format(index))
         return self.vm_code
 
-    def compile_constructor_define(self):
-
-        return
-
-    def compile_method_define(self):
-        return
-
-    def compile_function_define(self, subroutine_dec):
-        logger.debug('进入compile_function_define')
-        # todo 处理方法调用返回值
-        return_type = subroutine_dec.find_all()[1].text
-
+    def compile_constructor_define(self, subroutine_dec):
         function_id = self.get_class_name() + '.' + subroutine_dec.find_all()[2].text
-        # 处理function声明部分
-        self.compile_function_start(function_id)
-        # 处理function的方法体部分
+        # 处理声明部分
+        local_vars_amount = self.st.get_local_vars_amount(function_id)
+        logger.debug('function_id:{}, local_vars_amount:{}'.format(function_id, local_vars_amount))
+        code = 'function {} {}'.format(function_id, local_vars_amount)
+        self.vm_code.append(code)
+        logger.info(code)
+        # 分配内存空间
+        class_vars_amount = self.st.get_class_vars_amount(self.get_class_name())
+        self.vm_code.append('push constant {}'.format(class_vars_amount))
+        self.vm_code.append('call Memory.alloc 1')
+        self.vm_code.append('pop pointer 0')
+        # 处理方法体部分
+        statements = subroutine_dec.find('subroutineBody').find_all('statements', recursive=False)
+        self.compile_statements(function_id, statements)
+
+    def compile_method_define(self, subroutine_dec):
+        # 处理声明部分+方法体部分
+        self.compile_function_define(subroutine_dec)
+
+    # 处理声明部分+方法体部分
+    def compile_function_define(self, subroutine_dec):
+        function_id = self.get_class_name() + '.' + subroutine_dec.find_all()[2].text
+        # 处理声明部分
+        local_vars_amount = self.st.get_local_vars_amount(function_id)
+        logger.debug('function_id:{}, local_vars_amount:{}'.format(function_id, local_vars_amount))
+        code = 'function {} {}'.format(function_id, local_vars_amount)
+        self.vm_code.append(code)
+        logger.info(code)
+        # 处理方法体部分
         statements = subroutine_dec.find('subroutineBody').find_all('statements', recursive=False)
         self.compile_statements(function_id, statements)
 
@@ -96,49 +117,52 @@ class JackCompiler:
         statement.find().decompose()
         # logger.info('==============================')
         # logger.info(statement)
-        expression_compiler = ExpressionCompiler(function_id, self.st, statement)
-        self.vm_code.extend(expression_compiler.compile())
+        expression_compiler = ExpressionCompiler(function_id, self.st)
+        expression_compiler.compile_term(statement)
+        self.vm_code.extend(expression_compiler.get_vm_code())
         # do语句没有变量接受返回值，故把值丢到临时区域
         self.vm_code.append('pop temp 0')
 
     def compile_while_statement(self, function_id, statement):
         # 方式while。start标签，以便重复执行
-        while_start = '{}$WHILE_START.{}'.format(function_id, self.label_index)
+        while_start = 'WHILE_EXP{}'.format(self.label_index)
         self.vm_code.append('label {}'.format(while_start))
         # 计算while表达式的值，放入堆栈中
-        expression = statement.find('expression', recursive=False).find('term')
-        expression_compiler = ExpressionCompiler(function_id, self.st, expression)
-        self.vm_code.extend(expression_compiler.compile())
+        expression = statement.find('expression', recursive=False)
+        expression_compiler = ExpressionCompiler(function_id, self.st)
+        expression_compiler.compile_expression(expression)
+        self.vm_code.extend(expression_compiler.get_vm_code())
         # 构造while判断体
-        # 判断这个值大于0则进入程序块function_id$WHILE_START.label_index
-        while_true = '{}$WHILE_TRUE.{}'.format(function_id, self.label_index)
-        while_false = '{}$WHILE_FALSE.{}'.format(function_id, self.label_index)
-        self.vm_code.append('if-goto {}'.format(while_true))
-        # 小于0则退出到function_id$WHILE_END.label_index
-        self.vm_code.append('goto {}'.format(while_false))
-        self.label_index += 1
-        # 构造while程序体
-        self.vm_code.append('label {}'.format(while_true))
+        # not 表达式为真则退出
+        while_end = 'WHILE_END{}'.format(self.label_index)
+        self.vm_code.append('not')
+        self.vm_code.append('if-goto {}'.format(while_end))
+        # 判断这个值大于0则进入程序块WHILE_START.label_index
+        while_true = 'WHILE_TRUE{}'.format(self.label_index)
+        # while程序体
         expression_bodys = statement.find_all('statements', recursive=False)
         self.compile_statements(function_id, expression_bodys)
+        # 程序体跳转回去继续判断
         self.vm_code.append('goto {}'.format(while_start))
-        self.vm_code.append('label {}'.format(while_false))
+        self.vm_code.append('label {}'.format(while_end))
+        self.label_index += 1
 
 
 
     def compile_if_statement(self, function_id, statement):
         # 计算if表达式的值，放入堆栈中
-        expression = statement.find('expression', recursive=False).find('term')
-        expression_compiler = ExpressionCompiler(function_id, self.st, expression)
-        self.vm_code.extend(expression_compiler.compile())
+        expression = statement.find('expression', recursive=False)
+        expression_compiler = ExpressionCompiler(function_id, self.st)
+        expression_compiler.compile_expression(expression)
+        self.vm_code.extend(expression_compiler.get_vm_code())
         # 构造if。end标签，以便执行后退出
-        if_end = '{}$IF_END.{}'.format(function_id, self.label_index)
+        if_end = 'IF_END{}'.format(self.label_index)
         # 构造if判断体
         # 判断这个值大于0则进入程序块function_id$IF_TRUE.label_index
-        if_true = '{}$IF_TRUE.{}'.format(function_id, self.label_index)
+        if_true = 'IF_TRUE{}'.format(self.label_index)
         self.vm_code.append('if-goto {}'.format(if_true))
         # 小于0则退出到function_id$IF_FALSE.label_index
-        if_false = '{}$IF_FALSE.{}'.format(function_id, self.label_index)
+        if_false = 'IF_FALSE.{}'.format(self.label_index)
         self.vm_code.append('goto {}'.format(if_false))
         self.label_index += 1
         # 构造IF_TRUE程序体
@@ -155,28 +179,35 @@ class JackCompiler:
         self.vm_code.append('label {}'.format(if_end))
 
     def compile_let_statement(self, function_id, statement):
-        expression = statement.find('expression', recursive=False).find('term')
-        # logger.debug(expression)
-        expression_compiler = ExpressionCompiler(function_id, self.st, expression)
-        self.vm_code.extend(expression_compiler.compile())
+        expression = statement.find('expression', recursive=False)
+        # 计算等号后面表达式的值
+        expression_compiler = ExpressionCompiler(function_id, self.st)
+        expression_compiler.compile_expression(expression)
+        self.vm_code.extend(expression_compiler.get_vm_code())
 
-        # 实现pop
+        # 把上面计算出的值赋值给let后的变量
         # 找到变量名称
         var_name = statement.find_all()[1].text
-        # 获取变量类别
-        kind, index = self.st.get_var_info(function_id, var_name)
-        code = 'pop {} {}'.format(kind, index)
-        # 实现pop
-        self.vm_code.append(code)
-        logger.debug(code)
-        return
+        # 赋值
+        var_info = self.st.check_var_info(function_id, var_name)
+        if var_info['kind'] == 'field':
+            # 如果是对象属性，则赋值到heap区域
+            # 先找到对象起始地址（根据约定，此时argument 0存的一定是此对象的地址）
+            self.vm_code.append('push argument 0')
+            self.vm_code.append('pop pointer 0')
+            # 然后赋值
+            self.vm_code.append('pop this {}'.format(var_info['index']))
+        else:
+            self.vm_code.append('pop {} {}'.format(var_info['kind'], var_info['index']))
+
 
     def compile_return_statement(self, function_id, statement):
         # 如果return后面有表达式
         if statement.find('expression'):
             # 计算返回值表达式
-            expression_compiler = ExpressionCompiler(function_id, self.st, statement.find('expression').find('term'))
-            self.vm_code.extend(expression_compiler.compile())
+            expression_compiler = ExpressionCompiler(function_id, self.st)
+            expression_compiler.compile_expression(statement.find('expression'))
+            self.vm_code.extend(expression_compiler.get_vm_code())
         else:
             self.vm_code.append('push constant 0')
 

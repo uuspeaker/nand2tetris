@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from Log import logger
+import re
 
 class SymbolTable:
 
@@ -92,7 +93,7 @@ class SymbolTable:
             # 进入新的方法，重置索引值
             argument_index = 0
             # 类名+方法名作为id
-            sub_name = subroutine_dec.find('identifier').text
+            sub_name = subroutine_dec.find_all()[2].text
             id = self.class_name + '.' + sub_name
             param_pair_list = subroutine_dec.find('parameterList').find_all()
             if len(param_pair_list) == 0:
@@ -111,14 +112,12 @@ class SymbolTable:
                 argument_index += 1
 
 
-    def get_local_vars(self, id):
-        return self.filte_sub_vars(id, 'local')
 
     def get_local_vars_amount(self, id):
         return len(self.filte_sub_vars(id, 'local'))
 
-    def get_argument_vars(self):
-        return self.filte_sub_vars(id, 'argument')
+    def get_class_vars_amount(self, id):
+        return len(self.filte_sub_vars(id, 'field'))
 
     def filte_sub_vars(self, id, kind):
         args = []
@@ -127,12 +126,32 @@ class SymbolTable:
                 args.append(item)
         return args
 
+    # id为className.funcitonName格式
+    def check_var_info(self, id, name):
+        var_info = self.get_var_info(id, name)
+        if var_info != '':
+            return var_info
+        else:
+            logger.error('根据id：{}，name：{}，未找到对应变量'.format(id, name))
+            raise Exception('根据id：{}，name：{}，未找到对应变量'.format(id, name))
+
     def get_var_info(self, id, name):
-        for item in self.all_table:
+        # 先从local区域需找
+        for item in self.local_table:
             if item['id'] == id and item['name'] == name:
-                return (item['kind'], item['index'])
-        logger.error('根据id：{}，name：{}，未找到对应变量'.format(id, name))
-        raise Exception('根据id：{}，name：{}，未找到对应变量'.format(id, name))
+                return item
+        # 再从argument区域需找
+        for item in self.arg_table:
+            if item['id'] == id and item['name'] == name:
+                return item
+        # 最后从class区域寻找
+        # 先截取className
+        class_name = re.findall(r'^(.*)\.', id)
+        for item in self.class_table:
+            if item['id'] == class_name[0] and item['name'] == name:
+                return item
+        return ''
+
 
 
 

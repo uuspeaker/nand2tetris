@@ -58,23 +58,27 @@ class FileParser:
 
         fileName = os.path.basename(self.src)
         fileName = re.findall(r'(.*)\.', fileName)[0]
-        print('翻译文件', path + '/' + fileName + '.xml')
+        print('开始翻译文件', path + '/' + fileName + '.xml')
         newFileName = fileName + '.vm'
-        print('翻译后文件: ', newFileName)
+
         compiler = JackCompiler(self.src)
         vm_code = compiler.compile()
         # print('汇编代码', self.codes)
         with open(path + '/' + newFileName, 'w+') as file:
             for line in vm_code:
                 file.write(line + '\n')
+        print('翻译完成，文件名称: ', newFileName)
 
     def test(self):
         if '&gt;' in ['+', '-', '*', '/', '=', '&gt;', '&lt;', '&', '|']:
             print('=========')
 
 # parser = FileParser('D:/program/nand2tetris/11/Seven/Main.xml')
-parser = FileParser('D:/program/nand2tetris/11/ConvertToBin/Main.xml')
-parser.generate_vm()
+# parser = FileParser('D:/program/nand2tetris/11/ConvertToBin/Main.xml')
+# parser = FileParser('D:/program/nand2tetris/11/Square/Main.xml')
+# parser = FileParser('D:/program/nand2tetris/11/Square/Square.xml')
+# parser = FileParser('D:/program/nand2tetris/11/Square/SquareGame.xml')
+# parser.generate_vm()
 # parser.test()
 
 
