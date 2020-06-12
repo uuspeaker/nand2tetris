@@ -4,7 +4,11 @@ from ExpressionCompiler import ExpressionCompiler
 from Log import logger
 import re
 
+
+
 class JackCompiler:
+
+    label_index = 1
 
     def __init__(self, src):
         self.src = src
@@ -18,19 +22,25 @@ class JackCompiler:
         # print('self.soup',self.soup)
         self.st = SymbolTable(self.soup)
 
+    def print_source_code(self, code):
+        logger.warn('==============出错的代码是==================')
+        logger.warn(code)
 
     def compile(self):
         logger.debug('start to compile')
         subroutine_decs = self.soup.find_all('subroutineDec')
         # print('subroutines', subroutines)
         index = 0
-        for subroutine_dec in subroutine_decs:
-            index += 1
-            logger.debug('处理第{}个方法'.format(index))
-            if subroutine_dec.find().text == 'function':
-                self.compile_function_define(subroutine_dec)
-
-            logger.debug('第{}个方法处理完成'.format(index))
+        try:
+            for subroutine_dec in subroutine_decs:
+                logger.info('处理第{}个方法'.format(index))
+                if subroutine_dec.find().text == 'function':
+                    self.compile_function_define(subroutine_dec)
+                index += 1
+                logger.info('第{}个方法处理完成'.format(index))
+        except Exception as e:
+            logger.error(e)
+            self.print_source_code(subroutine_dec)
         return self.vm_code
 
     def compile_constructor_define(self):
@@ -70,66 +80,79 @@ class JackCompiler:
                 else:
                     raise Exception('{无法识别的statement}'.format(curr_statement))
 
-
     def compile_do_statement(self, function_id, statement):
         # expression_xml = statement.contents()
         statement.find().decompose()
         expression_compiler = ExpressionCompiler(function_id, self.st, statement)
-        expression_compiler.compile()
-        self.vm_code.extend(expression_compiler.get_vm_code())
-
-    def compile_do_statement2(self, function_id, statement):
-        # 找到方法后面包含所有参数的expressionList节点
-        expression_list_xml = statement.find('expressionList', recursive=False)
-        # 实现push argument
-        self.compile_expression_list(function_id, expression_list_xml)
-
-        # 找到方法开始的地方
-        nodes = statement.find_all()[1:]
-        # 获取方法参数个数
-        arg_amount = len(expression_list_xml.find_all('expression', recursive=False))
-        # 实现call function
-        self.compile_call_function(nodes, arg_amount)
-
-    def compile_expression_list(self, function_id, expression_list_xml):
-        # logger.debug('解析方法参数{},{}'.format(function_id,expression_list_xml))
-        expressions = expression_list_xml.find_all('expression', recursive=False)
-        for expression in expressions:
-            expression_compiler = ExpressionCompiler(function_id,self.st, expression)
-            expression_compiler.compile()
-            self.vm_code.extend(expression_compiler.get_vm_code())
+        self.vm_code.extend(expression_compiler.compile())
+        # do语句没有变量接受返回值，故把值丢到临时区域
+        self.vm_code.append('pop temp 0')
 
     def compile_while_statement(self, function_id, statement):
-        return
+        # 方式while。start标签，以便重复执行
+        while_start = '{}$while.start.{}'.format(function_id, self.label_index)
+        self.vm_code.append('label {}'.format(while_start))
+        # 计算while表达式的值，放入堆栈中
+        expression = statement.find('expression', recursive=False).find('term')
+        expression_compiler = ExpressionCompiler(function_id, self.st, expression)
+        self.vm_code.extend(expression_compiler.compile())
+        # 构造while判断体
+        # 判断这个值大于0则进入程序块function_id$while.start.label_index
+        while_true = '{}$while.true.{}'.format(function_id, self.label_index)
+        while_false = '{}$while.false.{}'.format(function_id, self.label_index)
+        self.vm_code.append('if-goto {}'.format(while_true))
+        # 小于0则退出到function_id$while.end.label_index
+        self.vm_code.append('goto {}'.format(while_false))
+        self.label_index += 1
+        # 构造while程序体
+        self.vm_code.append('label {}'.format(while_true))
+        expression_bodys = statement.find_all('statements', recursive=False)
+        self.compile_statements(function_id, expression_bodys)
+        self.vm_code.append('goto {}'.format(while_start))
+        self.vm_code.append('label {}'.format(while_false))
+
+
 
     def compile_if_statement(self, function_id, statement):
-        return
+        # 计算if表达式的值，放入堆栈中
+        expression = statement.find('expression', recursive=False).find('term')
+        expression_compiler = ExpressionCompiler(function_id, self.st, expression)
+        self.vm_code.extend(expression_compiler.compile())
+        # 构造if。end标签，以便执行后退出
+        if_end = '{}$if.end.{}'.format(function_id, self.label_index)
+        # 构造if判断体
+        # 判断这个值大于0则进入程序块function_id$if.true.label_index
+        if_true = '{}$if.true.{}'.format(function_id, self.label_index)
+        self.vm_code.append('if-goto {}'.format(if_true))
+        # 小于0则退出到function_id$if.false.label_index
+        if_false = '{}$if.false.{}'.format(function_id, self.label_index)
+        self.vm_code.append('goto {}'.format(if_false))
+        self.label_index += 1
+        # 构造if.true程序体
+        self.vm_code.append('label {}'.format(if_true))
+        expression_bodys = statement.find_all('statements', recursive=False)[0:1]
+        # logger.info('if body==========={}'.format(expression_bodys))
+        self.compile_statements(function_id, expression_bodys)
+        self.vm_code.append('goto {}'.format(if_end))
+        # 构造if.false程序体
+        self.vm_code.append('label {}'.format(if_false))
+        expression_bodys = statement.find_all('statements', recursive=False)[1:2]
+        self.compile_statements(function_id, expression_bodys)
+        # 执行完毕，退出
+        self.vm_code.append('label {}'.format(if_end))
 
     def compile_let_statement(self, function_id, statement):
-        expression = statement.find('expression')
-        logger.debug(expression)
+        expression = statement.find('expression', recursive=False).find('term')
+        # logger.debug(expression)
         expression_compiler = ExpressionCompiler(function_id, self.st, expression)
         self.vm_code.extend(expression_compiler.compile())
 
-        # # 实现push argument
-        # # 找到方法后面包含所有参数的expressionList节点
-        # expression_list_xml = statement.find('expressionList')
-        # logger.debug(statement)
-        # self.compile_expression_list(function_id, expression_list_xml)
-        #
-        # # 实现call function
-        # # 找到方法开始的地方
-        # nodes = statement.find('expression').find('term').find_all()
-        # # 获取方法参数个数
-        # arg_amount = len(expression_list_xml.find_all('expression', recursive=False))
-        # self.compile_call_function(nodes, arg_amount)
-
         # 实现pop
         # 找到变量名称
-        var_name = statement.find_all()[1]
+        var_name = statement.find_all()[1].text
         # 获取变量类别
-        var_type = self.st.get_var_type(self.get_class_name(), var_name)
-        code = 'pop {} {}'.format(var_type, var_name)
+        kind, index = self.st.get_var_info(function_id, var_name)
+        code = 'pop {} {}'.format(kind, index)
         # 实现pop
         self.vm_code.append(code)
         logger.debug(code)
@@ -141,23 +164,6 @@ class JackCompiler:
         logger.info('push constant 0')
         logger.info('return')
         return
-
-
-
-
-    # 传入以方法名称开始的xml节点，实现call functioin
-    def compile_call_function(self, nodes, arg_len):
-        name = ''
-        for node in nodes:
-            if node.text == '(':
-                code = 'call {} {}'.format(name, arg_len)
-                self.vm_code.append(code)
-                logger.info(code)
-                return
-            name += node.text
-        self.vm_code.append('call {} {}'.format(name, arg_len))
-        return
-
 
     def compile_function_start(self, function_id):
         local_vars_amount = self.st.get_local_vars_amount(function_id)

@@ -307,7 +307,7 @@ class CompilationEngine:
     def compile_expression(self):
         self.write('<expression>')
         self.compile_term()
-        if self.is_value(['+', '-', '*', '/', '=', '&gt;', '&lt;', '&', '|']):
+        if self.is_value(['+', '-', '*', '/', '=', '&gt;', '&lt;', '&', '&amp;','|']):
             self.eat_current()
             self.compile_term()
         self.write('</expression>')

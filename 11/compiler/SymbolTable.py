@@ -98,10 +98,12 @@ class SymbolTable:
     def get_argument_vars(self):
         return self.filte_sub_vars(id, 'argument')
 
-    def get_sub_var(self, id, name):
-        for item in self.sub_table:
-            if item['id'] == id and item['name'] == name:
-                return (item['kind'], item['index'])
+    # def get_sub_var(self, id, name):
+    #     for item in self.sub_table:
+    #         if item['id'] == id and item['name'] == name:
+    #             return (item['kind'], item['index'])
+    #     logger.error('根据id：{}，name：{}，未找到对应变量'.format(id, name))
+    #     raise Exception('根据id：{}，name：{}，未找到对应变量'.format(id, name))
 
     def filte_sub_vars(self, id, kind):
         args = []
@@ -110,13 +112,15 @@ class SymbolTable:
                 args.append(item)
         return args
 
-    def get_var_type(self, id, name):
+    def get_var_info(self, id, name):
         for item in self.sub_table:
             if item['id'] == id and item['name'] == name:
-                return item['kind']
+                return (item['kind'], item['index'])
         for item in self.sub_table:
             if item['id'] == id and item['name'] == name:
-                return item['kind']
+                return (item['kind'], item['index'])
+        logger.error('根据id：{}，name：{}，未找到对应变量'.format(id, name))
+        raise Exception('根据id：{}，name：{}，未找到对应变量'.format(id, name))
 
 
 

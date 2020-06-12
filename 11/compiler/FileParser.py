@@ -68,8 +68,14 @@ class FileParser:
             for line in vm_code:
                 file.write(line + '\n')
 
-parser = FileParser('D:/program/nand2tetris/11/Seven/Main.xml')
-# parser = FileParser('D:/program/nand2tetris/11/ConvertToBin/Main.xml')
+    def test(self):
+        if '&gt;' in ['+', '-', '*', '/', '=', '&gt;', '&lt;', '&', '|']:
+            print('=========')
+
+# parser = FileParser('D:/program/nand2tetris/11/Seven/Main.xml')
+parser = FileParser('D:/program/nand2tetris/11/ConvertToBin/Main.xml')
 parser.generate_vm()
+# parser.test()
+
 
 

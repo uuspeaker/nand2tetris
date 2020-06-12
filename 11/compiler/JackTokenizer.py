@@ -95,8 +95,10 @@ class JackTokenizer:
         self.current_status = self.next_status
 
     def replace_special_char(self, value):
+        value = value.replace('&', '&amp;')
         value = value.replace('<', '&lt;')
         value = value.replace('>', '&gt;')
+
         return value
 
     def get_tokens(self):
