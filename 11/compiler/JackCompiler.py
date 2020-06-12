@@ -22,25 +22,18 @@ class JackCompiler:
         # print('self.soup',self.soup)
         self.st = SymbolTable(self.soup)
 
-    def print_source_code(self, code):
-        logger.warn('==============出错的代码是==================')
-        logger.warn(code)
-
     def compile(self):
         logger.debug('start to compile')
         subroutine_decs = self.soup.find_all('subroutineDec')
         # print('subroutines', subroutines)
         index = 0
-        try:
-            for subroutine_dec in subroutine_decs:
-                logger.info('处理第{}个方法'.format(index))
-                if subroutine_dec.find().text == 'function':
-                    self.compile_function_define(subroutine_dec)
-                index += 1
-                logger.info('第{}个方法处理完成'.format(index))
-        except Exception as e:
-            logger.error(e)
-            self.print_source_code(subroutine_dec)
+
+        for subroutine_dec in subroutine_decs:
+            index += 1
+            logger.info('处理第{}个方法'.format(index))
+            if subroutine_dec.find().text == 'function':
+                self.compile_function_define(subroutine_dec)
+            logger.info('第{}个方法处理完成'.format(index))
         return self.vm_code
 
     def compile_constructor_define(self):
@@ -67,6 +60,7 @@ class JackCompiler:
             do_while_if_statements = statement.find_all(re.compile('.*Statement'),
                                                         recursive=False)
             for curr_statement in do_while_if_statements:
+                self.print_source_code(curr_statement)
                 if curr_statement.name == 'doStatement':
                     self.compile_do_statement(function_id, curr_statement)
                 elif curr_statement.name == 'whileStatement':
@@ -80,9 +74,28 @@ class JackCompiler:
                 else:
                     raise Exception('{无法识别的statement}'.format(curr_statement))
 
+
+    def print_source_code(self, expression):
+        head_nodes = expression.find_all()[:3]
+        code = self.get_code(head_nodes)
+        code = code.replace('\n', '').replace('\r', '')
+        logger.info('开始解析:{}'.format(code))
+
+    def get_code(self, head_nodes):
+        code = ''
+        for item in head_nodes:
+            if type(item.text) == str:
+                code = code + ' ' + item.text
+            else:
+                code + code + ' ' + self.get_code(item)
+        return code
+
+
     def compile_do_statement(self, function_id, statement):
         # expression_xml = statement.contents()
         statement.find().decompose()
+        # logger.info('==============================')
+        # logger.info(statement)
         expression_compiler = ExpressionCompiler(function_id, self.st, statement)
         self.vm_code.extend(expression_compiler.compile())
         # do语句没有变量接受返回值，故把值丢到临时区域
@@ -90,18 +103,18 @@ class JackCompiler:
 
     def compile_while_statement(self, function_id, statement):
         # 方式while。start标签，以便重复执行
-        while_start = '{}$while.start.{}'.format(function_id, self.label_index)
+        while_start = '{}$WHILE_START.{}'.format(function_id, self.label_index)
         self.vm_code.append('label {}'.format(while_start))
         # 计算while表达式的值，放入堆栈中
         expression = statement.find('expression', recursive=False).find('term')
         expression_compiler = ExpressionCompiler(function_id, self.st, expression)
         self.vm_code.extend(expression_compiler.compile())
         # 构造while判断体
-        # 判断这个值大于0则进入程序块function_id$while.start.label_index
-        while_true = '{}$while.true.{}'.format(function_id, self.label_index)
-        while_false = '{}$while.false.{}'.format(function_id, self.label_index)
+        # 判断这个值大于0则进入程序块function_id$WHILE_START.label_index
+        while_true = '{}$WHILE_TRUE.{}'.format(function_id, self.label_index)
+        while_false = '{}$WHILE_FALSE.{}'.format(function_id, self.label_index)
         self.vm_code.append('if-goto {}'.format(while_true))
-        # 小于0则退出到function_id$while.end.label_index
+        # 小于0则退出到function_id$WHILE_END.label_index
         self.vm_code.append('goto {}'.format(while_false))
         self.label_index += 1
         # 构造while程序体
@@ -119,22 +132,22 @@ class JackCompiler:
         expression_compiler = ExpressionCompiler(function_id, self.st, expression)
         self.vm_code.extend(expression_compiler.compile())
         # 构造if。end标签，以便执行后退出
-        if_end = '{}$if.end.{}'.format(function_id, self.label_index)
+        if_end = '{}$IF_END.{}'.format(function_id, self.label_index)
         # 构造if判断体
-        # 判断这个值大于0则进入程序块function_id$if.true.label_index
-        if_true = '{}$if.true.{}'.format(function_id, self.label_index)
+        # 判断这个值大于0则进入程序块function_id$IF_TRUE.label_index
+        if_true = '{}$IF_TRUE.{}'.format(function_id, self.label_index)
         self.vm_code.append('if-goto {}'.format(if_true))
-        # 小于0则退出到function_id$if.false.label_index
-        if_false = '{}$if.false.{}'.format(function_id, self.label_index)
+        # 小于0则退出到function_id$IF_FALSE.label_index
+        if_false = '{}$IF_FALSE.{}'.format(function_id, self.label_index)
         self.vm_code.append('goto {}'.format(if_false))
         self.label_index += 1
-        # 构造if.true程序体
+        # 构造IF_TRUE程序体
         self.vm_code.append('label {}'.format(if_true))
         expression_bodys = statement.find_all('statements', recursive=False)[0:1]
         # logger.info('if body==========={}'.format(expression_bodys))
         self.compile_statements(function_id, expression_bodys)
         self.vm_code.append('goto {}'.format(if_end))
-        # 构造if.false程序体
+        # 构造IF_FALSE程序体
         self.vm_code.append('label {}'.format(if_false))
         expression_bodys = statement.find_all('statements', recursive=False)[1:2]
         self.compile_statements(function_id, expression_bodys)
@@ -159,7 +172,14 @@ class JackCompiler:
         return
 
     def compile_return_statement(self, function_id, statement):
-        self.vm_code.append('push constant 0')
+        # 如果return后面有表达式
+        if statement.find('expression'):
+            # 计算返回值表达式
+            expression_compiler = ExpressionCompiler(function_id, self.st, statement.find('expression').find('term'))
+            self.vm_code.extend(expression_compiler.compile())
+        else:
+            self.vm_code.append('push constant 0')
+
         self.vm_code.append('return')
         logger.info('push constant 0')
         logger.info('return')

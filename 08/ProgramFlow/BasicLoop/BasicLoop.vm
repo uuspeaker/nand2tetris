@@ -20,3 +20,6 @@ pop argument 0      // counter--
 push argument 0
 if-goto LOOP_START  // If counter > 0, goto LOOP_START
 push local 0
+2	if-goto	Main.fillMemory$Main.fillMemory$WHILE_TRUE.5
+	label	Main.fillMemory$Main.fillMemory$WHILE_FALSE.5
+		label	Main.fillMemory$Main.fillMemory$WHILE_TRUE.5

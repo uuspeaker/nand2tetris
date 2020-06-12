@@ -87,16 +87,17 @@ class ExpressionCompiler:
         elif name == 'identifier' and length > 1 and (next_text == '(' or next_text == '.'):
             func_name = self.get_func_name(item)
             # 把参数推入堆栈
-            for argument in item.find('expressionList', recursive=False).find_all('expression', recursive=False):
+            arguments = item.find('expressionList', recursive=False).find_all('expression', recursive=False)
+            for argument in arguments:
                 self.compile_items(argument.find_all(recursive=False))
             # 进行方法调用
-            local_var_amount = self.symbol_table.get_local_vars_amount(self.function_id)
-            self.vm_code.append('call {} {}'.format(func_name, local_var_amount))
+            arg_amount = len(arguments)
+            self.vm_code.append('call {} {}'.format(func_name, arg_amount))
         # 如果是普通变量
         elif name == 'identifier' and length == 1:
             # 则先找到变量地址信息，然后push
-            logger.info(self.function_id)
-            logger.info(text)
+            # logger.info(self.function_id)
+            # logger.info(text)
             kind, index = self.symbol_table.get_var_info(self.function_id, text)
             self.vm_code.append('push {} {}'.format(kind, index))
         # todo 如果是数组变量
@@ -104,7 +105,8 @@ class ExpressionCompiler:
             logger.error('还未实现数组'.format(item))
             raise Exception('还未实现数组'.format(item))
         elif name == 'keyword' and text in ['true', 'false', 'null', 'this']:
-            self.vm_code.append('push constant {}'.format(text))
+            dic = {'true':1, 'false':0, 'null': -1, 'this': 99}
+            self.vm_code.append('push constant {}'.format(dic[text]))
         else:
             logger.error('无法识别此表达式{}'.format(item))
             raise Exception('无法识别此表达式{}'.format(item))
