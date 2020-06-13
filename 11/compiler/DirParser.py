@@ -38,4 +38,6 @@ def extracte_vm(dir):
 # extracte_vm('D:/program/nand2tetris/11/Seven/')
 # extracte_vm('D:/program/nand2tetris/11/ConvertToBin/')
 # extracte_vm('D:/program/nand2tetris/11/Square/')
-extracte_vm('D:/program/nand2tetris/11/Average/')
+# extracte_vm('D:/program/nand2tetris/11/Average/')
+# extracte_vm('D:/program/nand2tetris/11/ComplexArrays/')
+extracte_vm('D:/program/nand2tetris/11/Pong/')
