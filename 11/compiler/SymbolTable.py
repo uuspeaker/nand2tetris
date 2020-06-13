@@ -89,9 +89,16 @@ class SymbolTable:
     def parse_argument_vars(self):
         subroutine_decs = self.soup.find_all('subroutineDec')
         for subroutine_dec in subroutine_decs:
+            func_kind = subroutine_dec.find().text
             # logger.info(subroutine_dec)
             # 进入新的方法，重置索引值
-            argument_index = 0
+            if func_kind in ['function', 'constructor']:
+                argument_index = 0
+            elif func_kind in ['method']:
+                argument_index = 1
+            else:
+                raise Exception('未知的方法定义{}'.format(subroutine_dec))
+
             # 类名+方法名作为id
             sub_name = subroutine_dec.find_all()[2].text
             id = self.class_name + '.' + sub_name

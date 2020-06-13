@@ -68,107 +68,106 @@ class ExpressionCompiler:
             next_text = term.find_all(recursive=False)[1].text
         # 如果是前缀操作符号
         if name == 'symbol' and length > 1 and text in ['~', '-']:
-            next_item = term.find('term')
-            self.compile_term(next_item)
-            # 处理前缀操作符
-            if text == '~':
-                self.vm_code.append('not')
-            else:
-                self.vm_code.append('neg')
+            self.handle_symbol(term, text)
         # 如果是数字常量
         elif name == 'integerConstant':
             self.vm_code.append('push constant {}'.format(text))
         # 如果是复合表达式
         elif text == '(':
             expression = term.find('expression', recursive=False)
-            # expression_compiler = ExpressionCompiler(self.function_id, self.symbol_table, expression)
-            # expression_compiler.compile()
             self.compile_expression(expression)
-            # self.vm_code.extend(expression_compiler.get_vm_code())
         # 如果是方法调用
         elif name == 'identifier' and length > 1 and (next_text == '(' or next_text == '.'):
-            func_name = self.get_func_name(term)
-            # 如果是对象方法调用，则把此对象的地址放到栈中（等下面的《方法调用》时，此地址会自动成为argument 0）
-            self.obj_invoke_handler(func_name)
-            # 把参数推入堆栈
-            expressions = term.find('expressionList', recursive=False).find_all('expression', recursive=False)
-            for expression in expressions:
-                self.compile_expression(expression)
-            # 进行《方法调用》
-            arg_amount = len(expressions)
-            self.vm_code.append('call {} {}'.format(func_name, arg_amount))
+            self.handle_subroutine_call(next_text, term)
         # 如果是变量
         elif name == 'identifier' and length == 1:
-            # 则先找到变量地址信息，然后push
-            # logger.info(self.function_id)
-            # logger.info(text)
-            var_info = self.symbol_table.check_var_info(self.function_id, text)
-
-            if var_info['kind'] == 'field':
-                logger.debug('处理对象{}'.format(var_info))
-                # 如果是对象属性，则从heap区域取值
-                self.vm_code.append('push argument 0')
-                self.vm_code.append('pop pointer 0')
-                self.vm_code.append('push this {}'.format(var_info['index']))
-            elif var_info['kind'] == 'argument':
-                index = int(var_info['index']) + 1
-                self.vm_code.append('push argument {}'.format(index))
-            elif var_info['kind'] == 'local':
-                # 如果是普通变量，则从对应local或者argument取值
-                self.vm_code.append('push local {}'.format(var_info['index']))
+            self.deal_single_var(text)
         # todo 如果是数组变量
         elif name == 'identifier' and length > 1 and next_text == '[':
             logger.error('还未实现数组'.format(term))
             raise Exception('还未实现数组'.format(term))
         elif name == 'keyword' and text in ['true', 'false', 'null', 'this']:
-            if text == 'this':
-                self.vm_code.append('push pointer 0')
-            elif text == 'true':
-                self.vm_code.append('push constant 0')
-                self.vm_code.append('not')
-            elif text == 'false':
-                self.vm_code.append('push constant 0')
-            elif text == 'null':
-                self.vm_code.append('push constant 0')
+            self.headle_keyword(text)
         else:
             logger.error('无法识别此表达式{}'.format(term))
             raise Exception('无法识别此表达式{}'.format(term))
         # logger.info(self.vm_code)
 
-    # 对象方法调用时，则将对象地址放到第一个参数
-    # 是对象调用则返回True，否则返回False
-    def obj_invoke_handler(self, invoked_func_name):
-        # 获取对象名称
-        obj = re.findall(r'^(.+)\.', invoked_func_name)
-        if len(obj) == 0:
-            return False
-        obj_name = obj[0]
-        # 如果能够在变量表找到，则表示是对象
-        var_info = self.symbol_table.get_var_info(self.function_id, obj_name)
-        if var_info != '':
-            # 将此对象地址放到第一个参数
-            # 如果是local变量
-            if var_info['kind'] == 'local':
-                # 将对象的地址放入栈顶
-                self.vm_code.append('push local {}'.format(var_info['index']))
-            elif var_info['kind'] == 'argument':
-                # 获取参数位置
-                index = int(var_info['index']) + 1
-                # 将对象的地址放入栈顶
-                self.vm_code.append('push argument {}'.format(index))
-            elif var_info['kind'] == 'field':
-                # 获取调用方对象地址
-                field_index = int(var_info['index'])
-                self.vm_code.append('push argument 0 ')
-                # 将对象的地址放入栈顶
-                self.vm_code.append('pop pointer 0 ')
-                self.vm_code.append('push this {}'.format(field_index))
-
-            return True
+    def handle_symbol(self, term, text):
+        next_item = term.find('term')
+        self.compile_term(next_item)
+        # 处理前缀操作符
+        if text == '~':
+            self.vm_code.append('not')
         else:
-            return False
+            self.vm_code.append('neg')
 
-    def get_func_name(self, item):
+    def headle_keyword(self, text):
+        if text == 'this':
+            self.vm_code.append('push pointer 0')
+        elif text == 'true':
+            self.vm_code.append('push constant 0')
+            self.vm_code.append('not')
+        elif text == 'false':
+            self.vm_code.append('push constant 0')
+        elif text == 'null':
+            self.vm_code.append('push constant 0')
+
+    def deal_single_var(self, text):
+        # 则先找到变量地址信息，然后push
+        # logger.info(self.function_id)
+        # logger.info(text)
+        var_info = self.symbol_table.check_var_info(self.function_id, text)
+        if var_info['kind'] == 'field':
+            logger.debug('处理对象{}'.format(var_info))
+            # 如果是对象属性，则从heap区域取值
+            # self.vm_code.append('push argument 0')
+            # self.vm_code.append('pop pointer 0')
+            self.vm_code.append('push this {}'.format(var_info['index']))
+        else:
+            # 如果是普通变量，则从对应local或者argument取值
+            self.vm_code.append('push {} {}'.format(var_info['kind'], var_info['index']))
+
+    def handle_subroutine_call(self, next_text, term):
+        subroutine_name = self.get_subroutine_name(term)
+        is_obj_invoke = False
+
+
+        if next_text == '.':
+            subroutine_left = re.findall(r'^(.+)\.', subroutine_name)[0]
+            subroutine_right = re.findall(r'\.(.+)$', subroutine_name)[0]
+            var_info = self.symbol_table.get_var_info(self.function_id, subroutine_left)
+            # 如果是对象调用，则需要把对象地址推入堆栈
+            if var_info != '':
+                # 用变量的className代替变量名，这样才能找到方法签名
+                subroutine_name = var_info['type'] + '.' + subroutine_right
+                is_obj_invoke = True
+                # 不为空表示subroutine_left是一个变量，既能发起调用又是变量，所以subroutine_left肯定是一个对象
+                # 获取obj的地址，放入堆栈
+                if var_info['kind'] == 'field':
+                    self.vm_code.append('push this {}'.format(var_info['index']))
+                else:
+                    self.vm_code.append('push {} {}'.format(var_info['kind'], var_info['index']))
+            # 如果是function方法调用，无需处理
+        else:
+            # 如果是method方法调用，则把当前this放入堆栈，后面重置this时会用到
+            self.vm_code.append('push pointer 0')
+            is_obj_invoke = True
+            # 如果是method方法调用，需要加上"classname."，这样才能找到方法签名
+            class_name = re.findall(r'^(.+)\.', self.function_id)[0]
+            subroutine_name = class_name + '.' + subroutine_name
+
+        # 把参数推入堆栈
+        expressions = term.find('expressionList', recursive=False).find_all('expression', recursive=False)
+        for expression in expressions:
+            self.compile_expression(expression)
+        # 进行方法调用
+        arg_amount = len(expressions)
+        if is_obj_invoke:
+            arg_amount = arg_amount + 1
+        self.vm_code.append('call {} {}'.format(subroutine_name, arg_amount))
+
+    def get_subroutine_name(self, item):
         # logger.debug(term)
         name = ''
         for value in item.find_all():
