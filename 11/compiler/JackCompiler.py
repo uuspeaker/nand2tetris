@@ -204,7 +204,7 @@ class JackCompiler:
 
 
     def compile_let_statement(self, function_id, statement):
-        expression = statement.find('expression', recursive=False)
+        expression = statement.find_all('expression', recursive=False)[-1]
         # 计算等号后面表达式的值
         expression_compiler = ExpressionCompiler(function_id, self.st)
         expression_compiler.compile_expression(expression)
@@ -213,15 +213,39 @@ class JackCompiler:
         # 把上面计算出的值赋值给let后的变量
         # 找到变量名称
         var_name = statement.find_all()[1].text
-        # 赋值
+        # 变量后面跟“[”表示给数组赋值
+        is_array = (statement.find_all()[2].text == '[')
+        # 获取变量信息
         var_info = self.st.check_var_info(function_id, var_name)
+        # 赋值
         if var_info['kind'] == 'field':
-            # 如果是对象属性，则赋值到heap区域
-            # 然后赋值
-            self.vm_code.append('pop this {}'.format(var_info['index']))
+            if is_array:
+                # 计算数组起始地址
+                self.vm_code.append('push this {}'.format(var_info['index']))
+                self.fetch_value_to_array(function_id, statement)
+            else:
+                # 如果是对象普通属性，则赋值到heap区域
+                self.vm_code.append('pop this {}'.format(var_info['index']))
         else:
-            self.vm_code.append('pop {} {}'.format(var_info['kind'], var_info['index']))
+            if is_array:
+                # 计算数组起始地址
+                self.vm_code.append('push {} {}'.format(var_info['kind'], var_info['index']))
+                self.fetch_value_to_array(function_id, statement)
+            else:
+                # 如果local，argument属性，赋值到对应区域
+                self.vm_code.append('pop {} {}'.format(var_info['kind'], var_info['index']))
 
+    def fetch_value_to_array(self, function_id, statement):
+        # 计算数组索引index
+        index_expression_compiler = ExpressionCompiler(function_id, self.st)
+        index_expression_compiler.compile_expression(statement.find('expression'))
+        self.vm_code.extend(index_expression_compiler.get_vm_code())
+        # 将地址和索引相加
+        self.vm_code.append('add')
+        # 设置that 0为index对应的地址
+        self.vm_code.append('pop pointer 1')
+        # 将=后面expression计算出的值放到that 0
+        self.vm_code.append('pop that 0')
 
     def compile_return_statement(self, function_id, statement):
         # 如果return后面有表达式

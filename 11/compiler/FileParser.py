@@ -70,15 +70,16 @@ class FileParser:
         print('翻译完成，文件名称: ', newFileName)
 
     def test(self):
-        if '&gt;' in ['+', '-', '*', '/', '=', '&gt;', '&lt;', '&', '|']:
-            print('=========')
+        for char in 'abc':
+            print(ord(char))
+
 
 # parser = FileParser('D:/program/nand2tetris/11/Seven/Main.xml')
 # parser = FileParser('D:/program/nand2tetris/11/ConvertToBin/Main.xml')
 # parser = FileParser('D:/program/nand2tetris/11/Square/Main.xml')
 # parser = FileParser('D:/program/nand2tetris/11/Square/Square.xml')
 # parser = FileParser('D:/program/nand2tetris/11/Square/SquareGame.xml')
-# parser.generate_vm()
+# # parser.generate_vm()
 # parser.test()
 
 

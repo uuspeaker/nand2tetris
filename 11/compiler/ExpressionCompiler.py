@@ -72,6 +72,10 @@ class ExpressionCompiler:
         # 如果是数字常量
         elif name == 'integerConstant':
             self.vm_code.append('push constant {}'.format(text))
+            # 如果是字符串常量
+        elif name == 'stringConstant':
+            logger.info('=======stringConstant========{}'.format(text))
+            self.handle_string(text)
         # 如果是复合表达式
         elif text == '(':
             expression = term.find('expression', recursive=False)
@@ -84,8 +88,7 @@ class ExpressionCompiler:
             self.deal_single_var(text)
         # todo 如果是数组变量
         elif name == 'identifier' and length > 1 and next_text == '[':
-            logger.error('还未实现数组'.format(term))
-            raise Exception('还未实现数组'.format(term))
+            self.handle_array(term)
         elif name == 'keyword' and text in ['true', 'false', 'null', 'this']:
             self.headle_keyword(text)
         else:
@@ -101,6 +104,35 @@ class ExpressionCompiler:
             self.vm_code.append('not')
         else:
             self.vm_code.append('neg')
+
+    def handle_array(self, term):
+        logger.debug('===========get into array========={}'.format(term))
+        array_name = term.find().text
+        # 获取数组地址，设置that
+        # 获取变量信息
+        var_info = self.symbol_table.check_var_info(self.function_id, array_name)
+        # 赋值
+        if var_info['kind'] == 'field':
+            # 计算数组起始地址
+            self.vm_code.append('push this {}'.format(var_info['index']))
+        else:
+            # 计算数组起始地址
+            self.vm_code.append('push {} {}'.format(var_info['kind'], var_info['index']))
+        # 计算出数组的index
+        self.compile_expression(term.find('expression'))
+        # 将数组地址和index相加
+        self.vm_code.append('add')
+        # 让that指向上述计算出的地址
+        self.vm_code.append('pop pointer 1')
+        # 计算array_name[index]的值
+        self.vm_code.append('push that 0')
+
+    def handle_string(self, text):
+        self.vm_code.append('push constant {}'.format(len(text)))
+        self.vm_code.append('call String.new 1')
+        for char in text:
+            self.vm_code.append('push constant {}'.format(ord(char)))
+            self.vm_code.append('call String.appendChar 2')
 
     def headle_keyword(self, text):
         if text == 'this':
