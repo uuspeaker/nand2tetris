@@ -15,11 +15,11 @@ class Math {
     function void init() {
         var int i, base;
         let i = 0;
-        let bitArr = Array.new(16);
+        let bitArr = Array.new(15);
         let bitArr[0] = 1;
-        while(i<15){
+        while(i<14){
             let bitArr[i+1] = bitArr[i] + bitArr[i];
-            let i = i+ 1;
+            let i = i + 1;
         }
         return;
     }
@@ -39,21 +39,27 @@ class Math {
      *  the Jack expressions x*y and multiply(x,y) return the same value.
      */
     function int multiply(int x, int y) {
-        var int shiftedX, index, bit, sum;
-        let shiftedX = x;
+        var int index, sum, x_positive, y_positive;
+        let x_positive = Math.abs(x);
+        let y_positive = Math.abs(y);
         let index = 0;
-        while ( index < 16 ){
-            let bit = bitArr[index];
+        let sum = 0;
+        while ( index < 15 ){
             // 如果y的第index个位置的值是1
-            if(y & bit = bit){
-                let sum = sum + shiftedX;
+            if(y_positive & bitArr[index] = bitArr[index]){
+                let sum = sum + x_positive;
             }
             // 获取下一个位置的基数
-            let shiftedX = shiftedX + shiftedX;
+            let x_positive = x_positive + x_positive;
             let index = index + 1;
         }
-        return sum;
+        if(Math.is_negative(x,y)){
+            return -sum;
+        }else{
+            return sum;
+        }
     }
+
 
     /** Returns the integer part of x/y.
      *  When a Jack compiler detects the multiplication operator '/' in the
@@ -61,6 +67,16 @@ class Math {
      *  the Jack expressions x/y and divide(x,y) return the same value.
      */
     function int divide(int x, int y) {
+        var int result;
+        let result = Math.divide_positive(Math.abs(x), Math.abs(y));
+        if(Math.is_negative(x,y)){
+            return -result;
+        }else{
+            return result;
+        }
+    }
+
+    function int divide_positive(int x, int y) {
         var int q;
         if(y = 0){
             return 0;
@@ -68,7 +84,7 @@ class Math {
         if (x < y){
             return 0;
         }
-        let q = Math.divide(x, 2 * y);
+        let q = Math.divide_positive(x, 2 * y);
         if((x - (2*q*y)) < y){
             return 2 * q;
         }else{
@@ -76,10 +92,39 @@ class Math {
         }
     }
 
+    function boolean is_negative(int x, int y){
+        if(x>0){
+            if(y<0) {
+                return true;
+            }
+        }
+        if(x<0){
+            if(y>0){
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
-        var int i;
-        return 0;
+        var int result, index, sum_medium, multiply_medium;
+        let index = 7;
+        let result = 0;
+
+        while((index > -1)){
+            let sum_medium = bitArr[index] + result;
+            let multiply_medium = sum_medium * sum_medium;
+            if (~(multiply_medium > x)){
+                //可能溢出，故加下面判断
+                if(multiply_medium > 0){
+                  let result = sum_medium;
+                }
+
+            }
+            let index = index - 1;
+        }
+        return result;
     }
 
     /** Returns the greater number. */
