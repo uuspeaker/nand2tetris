@@ -7,28 +7,83 @@
  * This library provides two services: direct access to the computer's main
  * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
  * consists of 32,768 words, each holding a 16-bit binary number.
- */ 
+ */
 class Memory {
+
+    static Array ram;
+    static int startAddress;
+    static Array usedRam;
+
+    static int heapStart;
+    static int heapEnd;
+
+    static int lastAddress;
 
     /** Initializes the class. */
     function void init() {
+        let ram = 0;
+
+        let heapStart = 2048;
+        let heapEnd = 16384;
+
+        let startAddress = heapStart + 2;
+        //设置可用内存大小
+        let ram[startAddress-2] = heapEnd - heapStart - 1;
+        let lastAddress = startAddress;
+
+        return;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
-    function int alloc(int size) {
+    function int alloc(int size){
+        var int avialableAddress, availableSize, nextAddress;
+        let availableSize = ram[startAddress-2];
+        let nextAddress = ram[startAddress-1];
+        //当前可用内存大小符合
+        if(availableSize > size){
+            let avialableAddress = startAddress;
+            //设置占用内存大小
+            let ram[avialableAddress-2] = size;
+            //占用内容，可用地址后移
+            let startAddress = startAddress + size + 2;
+            //更新可用内存大小
+            let ram[startAddress-2] = availableSize - size - 2;
+            //重新设置指向地址
+            let ram[startAddress-1] = nextAddress;
+            return startAddress;
+        }else{
+            let startAddress = nextAddress;
+            if(startAddress = lastAddress){
+                //如果已经是最后一个，则返回
+                return -1;
+            }else{
+                //如果不是最后一个则继续寻找可用内存
+                return Memory.alloc(size);
+            }
+
+        }
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
-    }    
+        var int startAddress;
+        //最后内存指向释放内存
+        let ram[lastAddress-1] = o;
+        //更新最后内存标签
+        let lastAddress = o;
+        return;
+    }
 }
