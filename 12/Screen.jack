@@ -83,23 +83,68 @@ class Screen {
     }
 
     function void drawHotizontalLine(int x, int y, int length){
-        while(length > -1){
-            do Screen.drawPixel(x + length, y);
-            let length = length - 1;
+        if(length > 0){
+            while(length > -1){
+                do Screen.drawPixel(x - length, y);
+                let length = length - 1;
+            }
+        }else{
+            while(length < -1){
+                do Screen.drawPixel(x - length, y);
+                let length = length + 1;
+            }
         }
         return;
     }
 
-    function void drawVerticalLine(int x, int y, int height){
-        while(height > -1){
-            do Screen.drawPixel(x, y + height);
-            let height = height - 1;
+    function void drawVerticalLine(int x, int y, int length){
+        if(length > 0){
+            while(length > -1){
+                do Screen.drawPixel(x, y-length);
+                let length = length - 1;
+            }
+        }else{
+            while(length < -1){
+                do Screen.drawPixel(x, y-length);
+                let length = length + 1;
+            }
         }
         return;
     }
 
     /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
     function void drawLine(int x1, int y1, int x2, int y2) {
+        var int dx, dy, a, b, diff;
+        var boolean isEnd;
+
+        //==================如果x或y相等，则画直线===============================
+        if(x1 = x2){
+            do Screen.drawHotizontalLine(x1, y1, y1-y2);
+            return;
+        }
+
+        if(y1 = y2){
+            do Screen.drawVerticalLine(x1, y1, x1-x2);
+            return;
+        }
+
+        //==================如果x和y不相等，则画曲线===============================
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+
+        while(~(a>dx) & ~(b>dy)){
+            do Screen.drawPixel(x1+a, y1+b);
+            let diff = (a * dy) - (b * dx);
+            if(diff > 0){
+                let a = a + 1;
+            }else{
+                let b = b + 1;
+            }
+        }
+        return;
+    }
+
+    function void drawLine2(int x1, int y1, int x2, int y2) {
         var int leftX, leftY, rightX, rightY, initSquare, nextSquare, nextX, nextY;
         var boolean isEnd;
 
