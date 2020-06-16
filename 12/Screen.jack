@@ -13,7 +13,6 @@ class Screen {
 
     static boolean isBlack;
     static int screenStart, screenEnd;
-    static Array sreenArr;
     static Array bitArr;
 
     /** Initializes the Screen. */
@@ -21,7 +20,6 @@ class Screen {
         let isBlack = true;
         let screenStart = 16384;
         let screenEnd = 24575;
-        let sreenArr = screenStart;
         do Screen.initBitArray();
         return;
     }
@@ -44,7 +42,7 @@ class Screen {
         let start = screenStart;
         let end = screenEnd + 1;
         while(start < end){
-            let sreenArr[start] = 0;
+            do Memory.poke(start, 0);
             let start = start + 1;
         }
         return;
@@ -59,23 +57,25 @@ class Screen {
 
     /** Draws the (x,y) pixel, using the current color. */
     function void drawPixel(int x, int y) {
-        var int position, rowInRam, columnInRam, oldValue;
-        let position = y * 256 + x;
-        let rowInRam = position / 16;
+        var int position, rowInRam, columnInRam, oldValue, address;
+
+        let address = 32 * y + (x / 16);
+        let oldValue = Memory.peek(address + screenStart);
+
         let columnInRam = position - (rowInRam * 16);
-        let oldValue = sreenArr[rowInRam];
-        if(sreenArr[rowInRam] & bitArr[columnInRam] = bitArr[columnInRam]){
+        let columnInRam = x - ((x / 16) * 16);
+        if(oldValue & bitArr[columnInRam] = bitArr[columnInRam]){
             //进入这里，表示原来是黑色
             //如果画黑色，则不用处理
             if(~isBlack){
                 //如果画白色
-                let sreenArr[rowInRam] = sreenArr[rowInRam] - bitArr[columnInRam];
+                do Memory.poke(address + screenStart, oldValue - bitArr[columnInRam]);
             }
         }else{
             //进入这里，表示原来是白色
             if(isBlack){
                 //如果画黑色
-                let sreenArr[rowInRam] = sreenArr[rowInRam] + bitArr[columnInRam];
+                do Memory.poke(address + screenStart, oldValue + bitArr[columnInRam]);
             }
             //如果画白色，则不用处理
         }
@@ -119,12 +119,12 @@ class Screen {
 
         //==================如果x或y相等，则画直线===============================
         if(x1 = x2){
-            do Screen.drawHotizontalLine(x1, y1, y1-y2);
+            do Screen.drawVerticalLine(x1, y1, y1-y2);
             return;
         }
 
         if(y1 = y2){
-            do Screen.drawVerticalLine(x1, y1, x1-x2);
+            do Screen.drawHotizontalLine(x1, y1, x1-x2);
             return;
         }
 
@@ -139,95 +139,6 @@ class Screen {
                 let a = a + 1;
             }else{
                 let b = b + 1;
-            }
-        }
-        return;
-    }
-
-    function void drawLine2(int x1, int y1, int x2, int y2) {
-        var int leftX, leftY, rightX, rightY, initSquare, nextSquare, nextX, nextY;
-        var boolean isEnd;
-
-        do Screen.setColor(true);
-        do Screen.drawPixel(x1, y1);
-        do Screen.drawPixel(x2, y2);
-
-        //==================如果x或y相等，则画直线===============================
-        if(x1 = x2){
-            if(y1 < y2){
-                do Screen.drawHotizontalLine(x1, y1, y2-y1);
-            }else{
-                do Screen.drawHotizontalLine(x1, y2, y1-y2);
-            }
-            return;
-        }
-
-        if(y1 = y2){
-            if(x1 < x2){
-                do Screen.drawVerticalLine(x1, y1, x2 - x1);
-            }else{
-                do Screen.drawVerticalLine(x2, y1, x1-x2);
-            }
-            return;
-        }
-
-        //==================如果x和y不相等，则画曲线===============================
-
-        //从左到右开始画
-        if(x1 < x2){
-            let leftX = x1;
-            let leftY = y1;
-            let rightX = x2;
-            let rightY = y2;
-        }else{
-            let leftX = x2;
-            let leftY = y2;
-            let rightX = x1;
-            let rightY = y1;
-        }
-
-        if(leftY > rightY){
-            let nextY = leftY + 1;
-            let nextX = leftX + 1;
-        }else{
-            let nextY = leftY - 1;
-            let nextX = leftX + 1;
-        }
-
-        while(~isEnd){
-            let initSquare = Screen.sinSquare(leftX, leftY, rightX, rightY);
-            let nextSquare = Screen.sinSquare(leftX, leftY, nextX, nextY);
-
-            //计算下一个方块位置
-            if(initSquare > nextSquare){
-                //初始夹角大于next夹角
-                if(leftY > rightY){
-                    //从左往右下降
-                    let nextX = leftX + 1;
-                }else{
-                    //从左往右上升
-                    let nextY = leftY - 1;
-
-                }
-            }else{
-                //初始夹角小于next夹角
-                if(leftY > rightY){
-                //从左往右下降
-                    let nextY = leftY - 1;
-                }else{
-                    //从左往右上
-                    let nextX = leftX + 1;
-                }
-            }
-
-            //画下一个点
-            do Screen.drawPixel(leftX, leftY);
-
-            //判断是否画到了终点
-            if(leftY > rightY){
-                let isEnd = (nextX < rightX) & (nextY < rightY);
-            }else{
-                let isEnd = (nextX < rightX) & (nextY > rightY);
             }
         }
         return;
